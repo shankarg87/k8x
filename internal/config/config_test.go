@@ -63,8 +63,14 @@ func TestEnsureConfigDir(t *testing.T) {
 
 	// Override the home directory for this test
 	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-	os.Setenv("HOME", tempDir)
+	defer func() {
+		if err := os.Setenv("HOME", originalHome); err != nil {
+			t.Errorf("Failed to restore HOME environment variable: %v", err)
+		}
+	}()
+	if err := os.Setenv("HOME", tempDir); err != nil {
+		t.Fatalf("Failed to set HOME environment variable: %v", err)
+	}
 
 	err := EnsureConfigDir()
 	if err != nil {

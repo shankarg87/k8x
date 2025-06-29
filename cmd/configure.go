@@ -70,10 +70,10 @@ This command will:
 		fmt.Printf("1. Edit %s to configure your preferred LLM provider\n", configPath)
 		fmt.Printf("2. Add your API keys to %s\n", credentialsPath)
 		fmt.Println("3. Run 'k8x run \"<your kubernetes goal>\"' to start using k8x")
-		
+
 		fmt.Println("\nExample:")
 		fmt.Println("  k8x run \"List all pods in the default namespace\"")
-		
+
 		return nil
 	},
 }
@@ -84,11 +84,11 @@ func copyExampleFile(srcPath, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read example file %s: %w", srcPath, err)
 	}
-	
+
 	if err := os.WriteFile(destPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", destPath, err)
 	}
-	
+
 	return nil
 }
 

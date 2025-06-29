@@ -100,7 +100,9 @@ func TestClient_Chat(t *testing.T) {
 	}
 
 	client.RegisterProvider(provider)
-	client.SetDefaultProvider("test")
+	if err := client.SetDefaultProvider("test"); err != nil {
+		t.Fatalf("SetDefaultProvider() failed: %v", err)
+	}
 
 	ctx := context.Background()
 	messages := []Message{{Role: "user", Content: "test message"}}

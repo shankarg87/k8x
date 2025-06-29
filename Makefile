@@ -91,5 +91,5 @@ setup: ## Set up development environment
 	@which goreleaser > /dev/null || (echo "Installing goreleaser..." && go install github.com/goreleaser/goreleaser@latest)
 
 # Create directories
-$(BUILD_DIR):
+build-dir:
 	@mkdir -p $(BUILD_DIR)

@@ -120,7 +120,12 @@ func (m *Manager) Load(filename string) (*Entry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open history file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			// Log the error but don't override the main error
+			fmt.Fprintf(os.Stderr, "Warning: failed to close file: %v\n", closeErr)
+		}
+	}()
 
 	entry := &Entry{
 		ID:    generateID(),
