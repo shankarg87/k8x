@@ -1,0 +1,124 @@
+project_name: k8x
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/shankgan/k8x/cmd.version={{.Version}} -X github.com/shankgan/k8x/cmd.commit={{.Commit}} -X github.com/shankgan/k8x/cmd.date={{.Date}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  - tap:
+      owner: shankgan
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://github.com/shankgan/k8x
+    description: "Agentic kubectl - AI-powered Kubernetes operations"
+    license: "MIT"
+    test: |
+      system "#{bin}/k8x --version"
+    install: |
+      bin.install "k8x"
+
+nfpms:
+  - id: packages
+    package_name: k8x
+    file_name_template: "{{ .ConventionalFileName }}"
+    vendor: Shank Gan
+    homepage: https://github.com/shankgan/k8x
+    maintainer: Shank Gan <shank@example.com>
+    description: "Agentic kubectl - AI-powered Kubernetes operations"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+
+snapcrafts:
+  - name: k8x
+    publish: true
+    summary: Agentic kubectl
+    description: AI-powered Kubernetes operations tool
+    grade: stable
+    confinement: strict
+    license: MIT
+    base: core22
+    apps:
+      k8x:
+        command: k8x
+        plugs: ["home", "network"]
+
+docker_images:
+  - image_templates:
+      - "ghcr.io/shankgan/k8x:{{ .Tag }}"
+      - "ghcr.io/shankgan/k8x:v{{ .Major }}"
+      - "ghcr.io/shankgan/k8x:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/shankgan/k8x:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--platform=linux/amd64"
+
+docker_manifests:
+  - name_template: "ghcr.io/shankgan/k8x:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/shankgan/k8x:{{ .Tag }}-amd64"
+      - "ghcr.io/shankgan/k8x:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/shankgan/k8x:latest"
+    image_templates:
+      - "ghcr.io/shankgan/k8x:latest-amd64"
+      - "ghcr.io/shankgan/k8x:latest-arm64"
+
+sboms:
+  - artifacts: archive

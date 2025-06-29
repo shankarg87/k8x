@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.20', '1.21']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build
+      run: make build
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: k8x-binary
+        path: build/k8x
