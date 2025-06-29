@@ -7,7 +7,7 @@ import (
 
 const (
 	// DefaultConfigDir is the default directory for k8x configuration
-	DefaultConfigDir = ".shx"
+	DefaultConfigDir = ".k8x"
 	// DefaultHistoryDir is the subdirectory for command history
 	DefaultHistoryDir = "history"
 	// CredentialsFile is the file containing LLM provider credentials

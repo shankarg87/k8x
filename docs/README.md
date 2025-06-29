@@ -24,7 +24,7 @@ docker run ghcr.io/shankgan/k8x:latest
 
 ## Configuration
 
-k8x stores its configuration in `~/.shx/config.yaml`. You can initialize the configuration with:
+k8x stores its configuration in `~/.k8x/config.yaml`. You can initialize the configuration with:
 
 ```bash
 k8x config init
@@ -32,7 +32,7 @@ k8x config init
 
 ### LLM Provider Setup
 
-Configure your preferred LLM provider credentials in `~/.shx/credentials`:
+Configure your preferred LLM provider credentials in `~/.k8x/credentials`:
 
 ```yaml
 openai:

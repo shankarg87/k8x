@@ -1,26 +1,33 @@
 package history
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/shankgan/k8x/internal/config"
 )
 
-// Entry represents a command history entry
+// Entry represents a k8x session entry
 type Entry struct {
-	ID        string         `json:"id"`
-	Goal      string         `json:"goal"`
-	Command   string         `json:"command"`
-	Args      []string       `json:"args"`
-	Timestamp time.Time      `json:"timestamp"`
-	Status    string         `json:"status"` // "success", "error", "pending"
-	Output    string         `json:"output,omitempty"`
-	Error     string         `json:"error,omitempty"`
-	Meta      map[string]any `json:"meta,omitempty"`
+	ID        string    `json:"id"`
+	Goal      string    `json:"goal"`
+	Steps     []Step    `json:"steps"`
+	Timestamp time.Time `json:"timestamp"`
+	Status    string    `json:"status"` // "success", "error", "pending"
+}
+
+// Step represents a single step in a k8x session
+type Step struct {
+	Description string `json:"description"`
+	Command     string `json:"command"`
+	Output      string `json:"output,omitempty"`
+	UndoCommand string `json:"undo_command,omitempty"`
+	Type        string `json:"type"` // "step", "exploratory", "question"
 }
 
 // Manager handles command history operations
@@ -45,7 +52,7 @@ func NewManager() (*Manager, error) {
 	}, nil
 }
 
-// Save saves a history entry to disk
+// Save saves a history entry to disk in .k8x format
 func (m *Manager) Save(entry *Entry) error {
 	if entry.ID == "" {
 		entry.ID = generateID()
@@ -54,38 +61,140 @@ func (m *Manager) Save(entry *Entry) error {
 		entry.Timestamp = time.Now()
 	}
 
-	filename := fmt.Sprintf("%s-%s.json", entry.Goal, entry.Timestamp.Format("20060102-150405"))
-	filename = sanitizeFilename(filename)
+	// Create kebab-case filename
+	goalKebab := strings.ToLower(strings.ReplaceAll(entry.Goal, " ", "-"))
+	goalKebab = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(goalKebab, "")
+	filename := fmt.Sprintf("%s-%s.k8x", goalKebab, entry.Timestamp.Format("20060102-150405"))
 
 	filepath := filepath.Join(m.historyDir, filename)
 
-	data, err := json.MarshalIndent(entry, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal history entry: %w", err)
+	var content strings.Builder
+
+	// Write shebang and goal
+	content.WriteString("#!/bin/k8x\n")
+	content.WriteString(fmt.Sprintf("#$ %s\n\n", entry.Goal))
+
+	// Write steps
+	for i, step := range entry.Steps {
+		switch step.Type {
+		case "exploratory":
+			content.WriteString(fmt.Sprintf("#~ %s\n", step.Description))
+		case "question":
+			content.WriteString(fmt.Sprintf("#? %s\n", step.Description))
+		default:
+			content.WriteString(fmt.Sprintf("# %d. %s\n", i+1, step.Description))
+		}
+
+		if step.Command != "" {
+			content.WriteString(step.Command + "\n")
+		}
+
+		if step.Output != "" {
+			outputLines := strings.Split(step.Output, "\n")
+			for _, line := range outputLines {
+				if line != "" {
+					content.WriteString(fmt.Sprintf("#> %s\n", line))
+				}
+			}
+		}
+
+		if step.UndoCommand != "" {
+			content.WriteString(fmt.Sprintf("#- %s\n", step.UndoCommand))
+		}
+
+		content.WriteString("\n")
 	}
 
-	if err := os.WriteFile(filepath, data, 0644); err != nil {
+	if err := os.WriteFile(filepath, []byte(content.String()), 0644); err != nil {
 		return fmt.Errorf("failed to write history file: %w", err)
 	}
 
 	return nil
 }
 
-// Load loads a history entry by filename
+// Load loads a history entry by filename from .k8x format
 func (m *Manager) Load(filename string) (*Entry, error) {
 	filepath := filepath.Join(m.historyDir, filename)
 
-	data, err := os.ReadFile(filepath)
+	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read history file: %w", err)
+		return nil, fmt.Errorf("failed to open history file: %w", err)
+	}
+	defer file.Close()
+
+	entry := &Entry{
+		ID:    generateID(),
+		Steps: []Step{},
 	}
 
-	var entry Entry
-	if err := json.Unmarshal(data, &entry); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal history entry: %w", err)
+	scanner := bufio.NewScanner(file)
+	var currentStep *Step
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		if strings.HasPrefix(line, "#$ ") {
+			entry.Goal = strings.TrimPrefix(line, "#$ ")
+		} else if strings.HasPrefix(line, "# ") {
+			// New step
+			if currentStep != nil {
+				entry.Steps = append(entry.Steps, *currentStep)
+			}
+			currentStep = &Step{
+				Description: strings.TrimPrefix(line, "# "),
+				Type:        "step",
+			}
+		} else if strings.HasPrefix(line, "#~ ") {
+			// Exploratory step
+			if currentStep != nil {
+				entry.Steps = append(entry.Steps, *currentStep)
+			}
+			currentStep = &Step{
+				Description: strings.TrimPrefix(line, "#~ "),
+				Type:        "exploratory",
+			}
+		} else if strings.HasPrefix(line, "#? ") {
+			// Question step
+			if currentStep != nil {
+				entry.Steps = append(entry.Steps, *currentStep)
+			}
+			currentStep = &Step{
+				Description: strings.TrimPrefix(line, "#? "),
+				Type:        "question",
+			}
+		} else if strings.HasPrefix(line, "#> ") {
+			// Output
+			if currentStep != nil {
+				output := strings.TrimPrefix(line, "#> ")
+				if currentStep.Output == "" {
+					currentStep.Output = output
+				} else {
+					currentStep.Output += "\n" + output
+				}
+			}
+		} else if strings.HasPrefix(line, "#- ") {
+			// Undo command
+			if currentStep != nil {
+				currentStep.UndoCommand = strings.TrimPrefix(line, "#- ")
+			}
+		} else if line != "" && !strings.HasPrefix(line, "#") {
+			// Command
+			if currentStep != nil {
+				currentStep.Command = line
+			}
+		}
 	}
 
-	return &entry, nil
+	// Add the last step
+	if currentStep != nil {
+		entry.Steps = append(entry.Steps, *currentStep)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan history file: %w", err)
+	}
+
+	return entry, nil
 }
 
 // List returns a list of history files
@@ -97,7 +206,7 @@ func (m *Manager) List() ([]string, error) {
 
 	var historyFiles []string
 	for _, file := range files {
-		if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
+		if !file.IsDir() && filepath.Ext(file.Name()) == ".k8x" {
 			historyFiles = append(historyFiles, file.Name())
 		}
 	}
@@ -117,22 +226,4 @@ func (m *Manager) Delete(filename string) error {
 // generateID generates a unique ID for a history entry
 func generateID() string {
 	return fmt.Sprintf("%d", time.Now().UnixNano())
-}
-
-// sanitizeFilename removes invalid characters from filename
-func sanitizeFilename(filename string) string {
-	// Replace invalid characters with hyphens
-	invalid := []rune{'/', '\\', ':', '*', '?', '"', '<', '>', '|', ' '}
-	runes := []rune(filename)
-
-	for i, r := range runes {
-		for _, inv := range invalid {
-			if r == inv {
-				runes[i] = '-'
-				break
-			}
-		}
-	}
-
-	return string(runes)
 }

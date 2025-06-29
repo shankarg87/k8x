@@ -1,0 +1,35 @@
+# k8x Configuration Example
+# Copy this file to ~/.k8x/config.yaml and customize
+
+llm:
+  # Default LLM provider to use (openai, anthropic)
+  default_provider: "anthropic"
+  
+  providers:
+    openai:
+      model: "gpt-4"
+      base_url: ""  # Leave empty for default
+      options:
+        temperature: "0.1"
+        max_tokens: "2000"
+    
+    anthropic:
+      model: "claude-3-5-sonnet-20241022"
+      base_url: ""  # Leave empty for default
+      options:
+        temperature: "0.1"
+        max_tokens: "2000"
+
+kubernetes:
+  # Default Kubernetes context (leave empty to use current context)
+  context: ""
+  # Default namespace (leave empty to use default namespace)
+  namespace: ""
+
+settings:
+  # Enable verbose output
+  verbose: false
+  # Enable command history tracking
+  history_enabled: true
+  # Enable undo functionality (future feature)
+  undo_enabled: false

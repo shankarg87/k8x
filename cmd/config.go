@@ -32,8 +32,8 @@ configuration directory and files.`,
 		}
 
 		fmt.Printf("Configuration initialized in %s\n", configDir)
-		fmt.Println("Edit ~/.shx/config.yaml and ~/.shx/credentials to configure your settings.")
-		fmt.Println("Add your LLM provider API keys to ~/.shx/credentials")
+		fmt.Println("Edit ~/.k8x/config.yaml and ~/.k8x/credentials to configure your settings.")
+		fmt.Println("Add your LLM provider API keys to ~/.k8x/credentials")
 		return nil
 	},
 }

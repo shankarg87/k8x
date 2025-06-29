@@ -12,7 +12,7 @@ Set up your LLM provider credentials:
 
 ```bash
 # Edit the credentials file
-vim ~/.shx/credentials
+vim ~/.k8x/credentials
 ```
 
 ## Common Use Cases

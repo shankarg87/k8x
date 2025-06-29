@@ -66,17 +66,22 @@ var historyShowCmd = &cobra.Command{
 
 		fmt.Printf("ID: %s\n", entry.ID)
 		fmt.Printf("Goal: %s\n", entry.Goal)
-		fmt.Printf("Command: %s\n", entry.Command)
-		fmt.Printf("Args: %v\n", entry.Args)
 		fmt.Printf("Timestamp: %s\n", entry.Timestamp.Format("2006-01-02 15:04:05"))
 		fmt.Printf("Status: %s\n", entry.Status)
+		fmt.Printf("Steps: %d\n", len(entry.Steps))
 
-		if entry.Output != "" {
-			fmt.Printf("Output:\n%s\n", entry.Output)
-		}
-
-		if entry.Error != "" {
-			fmt.Printf("Error:\n%s\n", entry.Error)
+		for i, step := range entry.Steps {
+			fmt.Printf("\nStep %d (%s):\n", i+1, step.Type)
+			fmt.Printf("  Description: %s\n", step.Description)
+			if step.Command != "" {
+				fmt.Printf("  Command: %s\n", step.Command)
+			}
+			if step.Output != "" {
+				fmt.Printf("  Output:\n%s\n", step.Output)
+			}
+			if step.UndoCommand != "" {
+				fmt.Printf("  Undo: %s\n", step.UndoCommand)
+			}
 		}
 
 		return nil

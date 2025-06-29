@@ -113,7 +113,7 @@ make dev
 ## 🛠️ Development Guidelines
 
 - Follow the established Cobra command structure
-- Use the `~/.shx/` directory for all configuration
+- Use the `~/.k8x/` directory for all configuration
 - Implement pluggable LLM providers
 - Maintain comprehensive tests
 - Follow the conventions in `copilot-instructions.md`

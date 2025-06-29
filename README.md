@@ -42,8 +42,8 @@ k8x config init
 
 2. Configure your LLM provider:
 ```bash
-# Edit ~/.shx/credentials and add your API keys
-vim ~/.shx/credentials
+# Edit ~/.k8x/credentials and add your API keys
+vim ~/.k8x/credentials
 ```
 
 3. Start using k8x:
