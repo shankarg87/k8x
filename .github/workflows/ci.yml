@@ -87,4 +87,4 @@ jobs:
           go-version: '1.21'
       - uses: pre-commit/action@v3.0.1
         with:
-          extra_args: run --all-files
+          extra_args: --all-files
