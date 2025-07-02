@@ -1,0 +1,30 @@
+# .pre-commit-config.yaml
+repos:
+  # 1) Core Go tooling
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.4.0
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: go-vet
+      - id: go-mod-tidy
+
+  # 2) Use local golangci-lint installation
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint run --timeout=5m
+        language: system
+        types: [go]
+        pass_filenames: false
+
+  # 3) Full go test suite (race + coverage) as in CI
+  - repo: local
+    hooks:
+      - id: go-test-full
+        name: go test (race & coverage)
+        entry: bash -c "go test -v -race -coverprofile=coverage.out ./... && echo 'Tests completed successfully'"
+        language: system
+        pass_filenames: false
+        always_run: true

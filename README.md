@@ -35,6 +35,7 @@ sudo mv k8x /usr/local/bin/
 docker run ghcr.io/shankgan/k8x:latest
 ```
 
+
 ### Setup
 
 1. Initialize configuration:

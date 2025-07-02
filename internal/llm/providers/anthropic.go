@@ -60,7 +60,7 @@ func (p *AnthropicProvider) IsConfigured() bool {
 // Chat sends messages to Claude and returns the response
 func (p *AnthropicProvider) Chat(ctx context.Context, messages []llm.Message) (*llm.Response, error) {
 	if !p.IsConfigured() {
-		return nil, fmt.Errorf("Anthropic provider not configured: missing API key or client")
+		return nil, fmt.Errorf("anthropic provider not configured: missing API key or client")
 	}
 
 	// Convert messages
