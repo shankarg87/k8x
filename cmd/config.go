@@ -3,7 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/shankgan/k8x/internal/config"
+	"k8x/internal/config"
+
 	"github.com/spf13/cobra"
 )
 

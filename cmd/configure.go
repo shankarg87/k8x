@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shankgan/k8x/internal/config"
+	"k8x/internal/config"
+	"k8x/internal/schemas"
+
 	"github.com/spf13/cobra"
 )
 
@@ -65,11 +67,55 @@ This command will:
 		}
 		fmt.Printf("✓ History directory ready: %s\n", historyDir)
 
+		// Step 1: Ask user for LLM provider
+		fmt.Println("\nSelect your preferred LLM provider:")
+		fmt.Println("  1. OpenAI")
+		fmt.Println("  2. Anthropic")
+		fmt.Println("  3. Google Vertex AI")
+		fmt.Print("Enter choice [1-3]: ")
+		var providerChoice int
+		_, err = fmt.Scanln(&providerChoice)
+		if err != nil || providerChoice < 1 || providerChoice > 3 {
+			return fmt.Errorf("invalid provider selection")
+		}
+
+		var provider string
+		switch providerChoice {
+		case 1:
+			provider = "openai"
+		case 2:
+			provider = "anthropic"
+		case 3:
+			provider = "google"
+		}
+
+		// Step 2: Ask for API key
+		fmt.Printf("Enter your %s API key: ", provider)
+		var apiKey string
+		_, err = fmt.Scanln(&apiKey)
+		if err != nil || apiKey == "" {
+			return fmt.Errorf("invalid API key")
+		}
+
+		// Load existing credentials or create new ones
+		creds, err := config.LoadCredentials()
+		if err != nil {
+			// If file doesn't exist or is invalid, create new credentials
+			creds = &schemas.Credentials{}
+		}
+
+		// Update credentials with the new provider and API key
+		creds.SetProviderAPIKey(provider, apiKey)
+
+		// Save the updated credentials
+		if err := config.SaveCredentials(creds); err != nil {
+			return fmt.Errorf("failed to update credentials: %w", err)
+		}
+		fmt.Printf("✓ Updated credentials for %s\n", provider)
+
 		fmt.Println("\n🚀 k8x workspace initialized successfully!")
 		fmt.Println("\nNext steps:")
-		fmt.Printf("1. Edit %s to configure your preferred LLM provider\n", configPath)
-		fmt.Printf("2. Add your API keys to %s\n", credentialsPath)
-		fmt.Println("3. Run 'k8x run \"<your kubernetes goal>\"' to start using k8x")
+		fmt.Println("Run 'k8x run \"<your kubernetes goal>\"' to start using k8x")
 
 		fmt.Println("\nExample:")
 		fmt.Println("  k8x run \"List all pods in the default namespace\"")

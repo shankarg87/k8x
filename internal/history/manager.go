@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shankgan/k8x/internal/config"
+	"k8x/internal/config"
 )
 
 // Entry represents a k8x session entry
@@ -226,6 +226,17 @@ func (m *Manager) Delete(filename string) error {
 		return fmt.Errorf("failed to delete history file: %w", err)
 	}
 	return nil
+}
+
+// AddStep adds a new step to an existing entry and saves it
+func (m *Manager) AddStep(entry *Entry, step Step) error {
+	entry.Steps = append(entry.Steps, step)
+	return m.Save(entry)
+}
+
+// UpdateEntry updates an existing entry by re-saving it
+func (m *Manager) UpdateEntry(entry *Entry) error {
+	return m.Save(entry)
 }
 
 // generateID generates a unique ID for a history entry

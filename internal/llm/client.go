@@ -23,15 +23,18 @@ type Provider interface {
 
 // Message represents a chat message
 type Message struct {
-	Role    string `json:"role"` // "user", "assistant", "system"
-	Content string `json:"content"`
+	Role       string     `json:"role"` // "user", "assistant", "system", "tool"
+	Content    string     `json:"content"`
+	ToolCallID string     `json:"tool_call_id,omitempty"` // For tool response messages
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`   // For assistant messages with tool calls
 }
 
 // Response represents an LLM response
 type Response struct {
-	Content string         `json:"content"`
-	Usage   *Usage         `json:"usage,omitempty"`
-	Meta    map[string]any `json:"meta,omitempty"`
+	Content   string         `json:"content"`
+	Usage     *Usage         `json:"usage,omitempty"`
+	Meta      map[string]any `json:"meta,omitempty"`
+	ToolCalls []ToolCall     `json:"tool_calls,omitempty"`
 }
 
 // Usage represents token usage information

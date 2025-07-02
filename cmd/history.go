@@ -3,7 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/shankgan/k8x/internal/history"
+	"k8x/internal/history"
+
 	"github.com/spf13/cobra"
 )
 
