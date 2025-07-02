@@ -16,7 +16,6 @@ The k8x project has been successfully initialized with the following structure:
 - `cmd/version.go` - Version information
 - `cmd/config.go` - Configuration management commands
 - `cmd/history.go` - Command history management
-- `cmd/ai.go` - AI-powered commands (ask, diagnose, interactive, undo)
 
 ### Internal Packages
 - `internal/config/` - Configuration and directory management

@@ -11,11 +11,13 @@ k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubect
 ## Features
 
 - 🤖 **Natural Language Interface**: Ask questions about your cluster in plain English
-- 🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis  
+- � **Autonomous Execution**: AI agent can execute safe kubectl commands automatically
+- �🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis  
 - 📚 **Command History**: Automatic tracking of all operations with undo support
-- 🔌 **Multi-LLM Support**: Works with OpenAI, Anthropic, and other LLM providers
-- 🛡️ **Secure by Default**: Credentials stored locally, operations require confirmation
+- 🔌 **Multi-LLM Support**: Works with OpenAI, Anthropic Claude, and other LLM providers
+- 🛡️ **Secure by Default**: Read-only mode, command filtering, and local credential storage
 - 🎯 **Context-Aware**: Understands your cluster state and provides relevant suggestions
+- ⚡ **Tool Integration**: Built-in shell execution tool for seamless kubectl operations
 
 ## Quick Start
 
@@ -33,6 +35,7 @@ sudo mv k8x /usr/local/bin/
 docker run ghcr.io/shankgan/k8x:latest
 ```
 
+
 ### Setup
 
 1. Initialize configuration:
@@ -48,34 +51,37 @@ vim ~/.k8x/credentials
 
 3. Start using k8x:
 ```bash
-k8x ask "What pods are running in my cluster?"
-k8x diagnose deployment my-app
+# Goal-oriented autonomous execution
+k8x run "Diagnose why my nginx pod is failing"
+k8x run "List all pods and show their resource usage"
+k8x run "Check if any services are not receiving traffic"
+
+# Interactive mode (coming soon)
 k8x interactive
 ```
 
 ## Usage Examples
 
 ```bash
-# Ask questions about your cluster
+# Goal-oriented autonomous execution
+k8x run "Find all pods that are not ready and explain why"
+k8x run "Check resource usage across all namespaces"
+k8x run "Diagnose why my service endpoints are empty"
+k8x run "List all failed deployments and their error messages"
+
+# View session history
+k8x history
+
+# Future commands (in development)
 k8x ask "Which pods are using the most memory?"
-k8x ask "Show me all failed deployments"
-k8x ask "Scale my-app to 5 replicas"
-
-# Diagnose issues
-k8x diagnose pod my-pod-abc123
 k8x diagnose deployment my-app
-
-# Interactive mode
 k8x interactive
-
-# View command history
-k8x history list
-k8x undo
 ```
 
 ## Documentation
 
 - [Full Documentation](./docs/README.md)
+- [Shell Execution Tool](./docs/shell-execution-tool.md)
 - [Usage Examples](./examples/basic-usage.md)
 - [Configuration Guide](./docs/configuration.md)
 - [Contributing](./CONTRIBUTING.md)

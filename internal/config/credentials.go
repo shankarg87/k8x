@@ -5,29 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8x/internal/schemas"
+
 	"gopkg.in/yaml.v3"
 )
 
-// Credentials represents the credentials file structure
-type Credentials struct {
-	OpenAI struct {
-		APIKey string `yaml:"api_key"`
-	} `yaml:"openai"`
-	Anthropic struct {
-		APIKey string `yaml:"api_key"`
-	} `yaml:"anthropic"`
-}
-
 // LoadCredentials loads credentials from the credentials file
-func LoadCredentials() (*Credentials, error) {
+func LoadCredentials() (*schemas.Credentials, error) {
 	credentialsPath, err := GetCredentialsPath()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials path: %w", err)
-	}
-
-	if _, err := os.Stat(credentialsPath); os.IsNotExist(err) {
-		// Return empty credentials if file doesn't exist
-		return &Credentials{}, nil
 	}
 
 	data, err := os.ReadFile(credentialsPath)
@@ -35,7 +22,7 @@ func LoadCredentials() (*Credentials, error) {
 		return nil, fmt.Errorf("failed to read credentials file: %w", err)
 	}
 
-	var creds Credentials
+	var creds schemas.Credentials
 	if err := yaml.Unmarshal(data, &creds); err != nil {
 		return nil, fmt.Errorf("failed to parse credentials file: %w", err)
 	}
@@ -44,7 +31,7 @@ func LoadCredentials() (*Credentials, error) {
 }
 
 // SaveCredentials saves credentials to the credentials file
-func SaveCredentials(creds *Credentials) error {
+func SaveCredentials(creds *schemas.Credentials) error {
 	credentialsPath, err := GetCredentialsPath()
 	if err != nil {
 		return fmt.Errorf("failed to get credentials path: %w", err)
@@ -80,18 +67,13 @@ func CreateDefaultCredentialsFile() error {
 		return nil // File already exists, don't overwrite
 	}
 
-	defaultCredentials := `# k8x Credentials File
-# Add your LLM provider API keys here
-
-openai:
-  api_key: "your-openai-api-key"
-
-anthropic:
-  api_key: "your-anthropic-api-key"
-
-# Uncomment and configure the providers you want to use
-# Make sure to keep this file secure and don't commit it to version control
-`
+	// Create default credentials structure
+	defaultCreds := &schemas.Credentials{
+		SelectedProvider: "openai",
+	}
+	defaultCreds.OpenAI.APIKey = "your-openai-api-key-here"
+	defaultCreds.Anthropic.APIKey = "your-anthropic-api-key-here"
+	defaultCreds.Google.ApplicationCredentials = "/path/to/service-account.json"
 
 	// Ensure the directory exists
 	credentialsDir := filepath.Dir(credentialsPath)
@@ -99,9 +81,6 @@ anthropic:
 		return fmt.Errorf("failed to create credentials directory: %w", err)
 	}
 
-	if err := os.WriteFile(credentialsPath, []byte(defaultCredentials), 0600); err != nil {
-		return fmt.Errorf("failed to write default credentials file: %w", err)
-	}
-
-	return nil
+	// Save the default credentials
+	return SaveCredentials(defaultCreds)
 }
