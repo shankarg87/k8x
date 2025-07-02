@@ -1,4 +1,8 @@
-# .pre-commit-config.yaml
+default_install_hook_types:
+  - pre-commit
+  - pre-push
+  - commit-msg
+
 repos:
   # 1) Core Go tooling
   - repo: https://github.com/dnephin/pre-commit-golang
@@ -28,3 +32,89 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+  # 4) YAML and Markdown linting, and branch protection
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: no-commit-to-branch
+        args: [--branch=main]
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        name: Format .md
+        stages: [pre-commit]
+        args:
+          - --fix
+          # Example: disable MD013 (line length rule)
+          - --disable=MD013
+        exclude: CHANGELOG.md$
+        files: \.md$
+
+  # 5) Additional useful checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: debug-statements
+      - id: detect-private-key
+      - id: fix-byte-order-marker
+      - id: check-json
+        name: Check JSON
+        files: \.json$
+        exclude: (^frontend/.*|\.ipynb$|node_modules/)
+      - id: pretty-format-json
+        name: Format JSON
+        args:
+          - --autofix
+          - --no-sort-keys
+        files: \.json$
+        exclude: (^frontend/.*|\.ipynb$|node_modules/)
+
+  - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+    rev: 0.2.3
+    hooks:
+      - id: yamlfmt
+        name: Format .yaml
+        args:
+          - --mapping=2
+          - --sequence=4
+          - --offset=2
+          - --implicit_start
+          - --preserve-quotes
+        files: \.(yaml|yml)$
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        name: Format .md
+        args:
+          - --fix
+          - --disable=MD013
+        files: \.md$
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        name: Check spelling
+        args: [--ignore-words-list=crate, teh]
+        exclude: \.(csv|sql|yaml)$|^frontend/.*|^node_modules/.*
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        name: Check commit message
+        stages: [commit-msg]

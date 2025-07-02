@@ -12,7 +12,7 @@ k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubect
 
 - 🤖 **Natural Language Interface**: Ask questions about your cluster in plain English
 - � **Autonomous Execution**: AI agent can execute safe kubectl commands automatically
-- �🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis  
+- �🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
 - 📚 **Command History**: Automatic tracking of all operations with undo support
 - 🔌 **Multi-LLM Support**: Works with OpenAI, Anthropic Claude, and other LLM providers
 - 🛡️ **Secure by Default**: Read-only mode, command filtering, and local credential storage
@@ -35,21 +35,23 @@ sudo mv k8x /usr/local/bin/
 docker run ghcr.io/shankgan/k8x:latest
 ```
 
-
 ### Setup
 
 1. Initialize configuration:
+
 ```bash
 k8x config init
 ```
 
-2. Configure your LLM provider:
+1. Configure your LLM provider:
+
 ```bash
 # Edit ~/.k8x/credentials and add your API keys
 vim ~/.k8x/credentials
 ```
 
-3. Start using k8x:
+1. Start using k8x:
+
 ```bash
 # Goal-oriented autonomous execution
 k8x run "Diagnose why my nginx pod is failing"
@@ -105,11 +107,16 @@ cd k8x
 # Install dependencies
 make deps
 
-# (Optional) Install pre-commit hooks
+# Pre-commit Related:
+# ----------------------------------------
+brew install pre-commit
+
+# Install pre-commit hooks
 pre-commit install --install-hooks
 
 # Run all pre-commit hooks manually
 pre-commit run --all-files
+# ----------------------------------------
 
 # Build the binary
 make build
@@ -127,6 +134,7 @@ make build
 #### Pre-commit Hooks Used
 
 The repository uses the following pre-commit hooks (see `.pre-commit-config.yaml`):
+
 - `golangci-lint` – Go code linting
 - `go-fmt` – Code formatting
 - `go-mod-tidy` – Ensure `go.mod`/`go.sum` are tidy
@@ -155,11 +163,11 @@ make dev
 
 ### Project Structure
 
-```
+```text
 k8x/
 ├── cmd/                 # CLI commands (Cobra)
 ├── internal/
-│   ├── config/         # Configuration management  
+│   ├── config/         # Configuration management
 │   ├── llm/            # LLM provider interfaces
 │   └── history/        # Command history tracking
 ├── docs/               # Documentation
