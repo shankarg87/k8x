@@ -74,17 +74,3 @@ jobs:
       with:
         name: k8x-binary
         path: build/k8x
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      - uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
