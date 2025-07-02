@@ -93,8 +93,9 @@ k8x interactive
 - Go 1.21+
 - kubectl configured with cluster access
 - LLM provider API key (OpenAI, Anthropic, etc.)
+- [pre-commit](https://pre-commit.com/) for code linting and formatting
 
-### Building
+### Developer Setup & Example Workflow
 
 ```bash
 # Clone the repository
@@ -104,13 +105,51 @@ cd k8x
 # Install dependencies
 make deps
 
-# Build
+# (Optional) Install pre-commit hooks
+pre-commit install --install-hooks
+
+# Run all pre-commit hooks manually
+pre-commit run --all-files
+
+# Build the binary
 make build
 
-# Run tests
-make test
+# Run initial configuration (interactive)
+./build/k8x configure
 
-# Development workflow
+# Run a goal-oriented session
+./build/k8x run "are all arcade ai pods running?"
+
+# List session history
+./build/k8x history list
+```
+
+#### Pre-commit Hooks Used
+
+The repository uses the following pre-commit hooks (see `.pre-commit-config.yaml`):
+- `golangci-lint` – Go code linting
+- `go-fmt` – Code formatting
+- `go-mod-tidy` – Ensure `go.mod`/`go.sum` are tidy
+- `trailing-whitespace` – Remove trailing whitespace
+- `end-of-file-fixer` – Ensure files end with a newline
+
+To add or update hooks, edit `.pre-commit-config.yaml` and re-run `pre-commit install`.
+
+### Building
+
+```bash
+make build
+```
+
+### Running Tests
+
+```bash
+make test
+```
+
+### Development workflow
+
+```bash
 make dev
 ```
 
