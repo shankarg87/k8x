@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -45,6 +44,11 @@ Example:
 			Timestamp: time.Now(),
 			Status:    "pending",
 			Steps:     []history.Step{},
+		}
+
+		// Save the new session file
+		if err := manager.Save(entry); err != nil {
+			return fmt.Errorf("failed to create session file: %w", err)
 		}
 
 		// First load the config to ensure LLM provider is set up
@@ -220,10 +224,4 @@ Guidelines:
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-}
-
-// generateKebabCase converts a string to kebab-case for filenames
-func generateKebabCase(s string) string {
-	kebab := strings.ToLower(strings.ReplaceAll(s, " ", "-"))
-	return regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(kebab, "")
 }
