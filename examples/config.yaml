@@ -25,6 +25,8 @@ kubernetes:
   context: ""
   # Default namespace (leave empty to use default namespace)
   namespace: ""
+  # Path to kubeconfig file (leave empty to use default ~/.kube/config)
+  kubeconfig_path: ""
 
 settings:
   # Enable verbose output

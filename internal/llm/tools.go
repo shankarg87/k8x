@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"k8x/internal/config"
 )
 
 // Tool represents a function that can be called by the LLM
@@ -60,6 +62,7 @@ type ToolResult struct {
 type ShellExecutor struct {
 	allowedCommands []string
 	workDir         string
+	k8sConfig       *config.KubernetesConfig
 }
 
 // NewShellExecutor creates a new shell executor with safety restrictions
@@ -85,6 +88,11 @@ func NewShellExecutor(workDir string) *ShellExecutor {
 		allowedCommands: allowedCommands,
 		workDir:         workDir,
 	}
+}
+
+// SetKubernetesConfig sets the Kubernetes configuration for this executor
+func (se *ShellExecutor) SetKubernetesConfig(k8sConfig *config.KubernetesConfig) {
+	se.k8sConfig = k8sConfig
 }
 
 // Execute runs a shell command with safety checks
@@ -115,6 +123,25 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 		if se.containsWriteOperations(command) {
 			return "", fmt.Errorf("kubectl write operations are not allowed in read-only mode. Command: %s", command)
 		}
+
+		// Apply Kubernetes configuration if available
+		if se.k8sConfig != nil {
+			// Add context flag if specified
+			if se.k8sConfig.Context != "" && !strings.Contains(command, "--context") {
+				command = fmt.Sprintf("%s --context=%s", command, se.k8sConfig.Context)
+			}
+
+			// Add namespace flag if specified and not already in command
+			if se.k8sConfig.Namespace != "" && !strings.Contains(command, "--namespace") && !strings.Contains(command, "-n ") {
+				command = fmt.Sprintf("%s --namespace=%s", command, se.k8sConfig.Namespace)
+			}
+		}
+	}
+
+	// Set up environment for kubectl if kubeconfig path is specified
+	env := os.Environ()
+	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && baseCmd == "kubectl" {
+		env = append(env, fmt.Sprintf("KUBECONFIG=%s", se.k8sConfig.KubeConfigPath))
 	}
 
 	// Execute the command
@@ -125,6 +152,9 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 	if se.workDir != "" {
 		cmd.Dir = se.workDir
 	}
+
+	// Set the environment variables
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -191,6 +221,11 @@ func GetShellExecutionTool(executor *ShellExecutor) Tool {
 type ToolManager struct {
 	tools    map[string]Tool
 	executor *ShellExecutor
+}
+
+// SetKubernetesConfig sets the Kubernetes configuration for the shell executor
+func (tm *ToolManager) SetKubernetesConfig(k8sConfig *config.KubernetesConfig) {
+	tm.executor.SetKubernetesConfig(k8sConfig)
 }
 
 // NewToolManager creates a new tool manager

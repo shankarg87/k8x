@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"k8x/internal/config"
 	"testing"
 )
 
@@ -37,4 +38,34 @@ func TestToolManager(t *testing.T) {
 			t.Logf("Unsafe command correctly blocked: %v", err)
 		}
 	})
+}
+
+func TestShellExecutorKubernetesConfigIntegration(t *testing.T) {
+	// This is just a simple test to check that SetKubernetesConfig works
+	executor := NewShellExecutor(".")
+
+	// Set kubernetes config
+	k8sConfig := &config.KubernetesConfig{
+		Context:        "test-context",
+		Namespace:      "test-namespace",
+		KubeConfigPath: "/path/to/kubeconfig",
+	}
+	executor.SetKubernetesConfig(k8sConfig)
+
+	// Verify that the config was set correctly
+	if executor.k8sConfig == nil {
+		t.Error("Kubernetes config not set")
+	}
+
+	if executor.k8sConfig.Context != "test-context" {
+		t.Errorf("Context = %q, want %q", executor.k8sConfig.Context, "test-context")
+	}
+
+	if executor.k8sConfig.Namespace != "test-namespace" {
+		t.Errorf("Namespace = %q, want %q", executor.k8sConfig.Namespace, "test-namespace")
+	}
+
+	if executor.k8sConfig.KubeConfigPath != "/path/to/kubeconfig" {
+		t.Errorf("KubeConfigPath = %q, want %q", executor.k8sConfig.KubeConfigPath, "/path/to/kubeconfig")
+	}
 }
