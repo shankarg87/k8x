@@ -28,7 +28,7 @@ repos:
     hooks:
       - id: go-test-full
         name: go test (race & coverage)
-        entry: bash -c "go test -v -race -coverprofile=coverage.out ./... && echo 'Tests completed successfully'"
+        entry: bash -c "go test -v -race -coverprofile=coverage.out ./... -short && echo 'Tests completed successfully'"
         language: system
         pass_filenames: false
         always_run: true

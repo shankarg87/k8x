@@ -2,6 +2,7 @@ package llm
 
 import (
 	"k8x/internal/config"
+	"strings"
 	"testing"
 )
 
@@ -18,15 +19,25 @@ func TestToolManager(t *testing.T) {
 		if result == "" {
 			t.Error("Echo command returned empty result")
 		}
-		t.Logf("Echo test result: %s", result)
+
+		expected := "Hello from k8x shell execution!"
+		if !strings.Contains(result, expected) {
+			t.Errorf("Echo result does not contain expected text. Got: %q", result)
+		}
 	})
 
 	t.Run("kubectl version", func(t *testing.T) {
 		result, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl version --client"}`)
 		if err != nil {
-			t.Logf("kubectl test error (expected if kubectl not available): %v", err)
+			t.Logf("kubectl test skipped (kubectl not available): %v", err)
 		} else {
-			t.Logf("kubectl version result: %s", result)
+			// Just check that we got some output, don't log the full result
+			if result == "" {
+				t.Error("kubectl version returned empty result")
+			}
+			if !strings.Contains(result, "Client Version") {
+				t.Error("kubectl version output doesn't contain expected 'Client Version' text")
+			}
 		}
 	})
 
@@ -35,7 +46,10 @@ func TestToolManager(t *testing.T) {
 		if err == nil {
 			t.Error("Unsafe command was not blocked!")
 		} else {
-			t.Logf("Unsafe command correctly blocked: %v", err)
+			// Just verify it was blocked, don't log the full error with all allowed commands
+			if !strings.Contains(err.Error(), "not allowed for security reasons") {
+				t.Errorf("Unexpected error message: %v", err)
+			}
 		}
 	})
 }

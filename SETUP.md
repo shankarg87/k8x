@@ -5,6 +5,7 @@
 The k8x project has been successfully initialized with the following structure:
 
 ### Core Files
+
 - `main.go` - Entry point
 - `go.mod` / `go.sum` - Go module dependencies
 - `Makefile` - Build and development tasks
@@ -12,27 +13,32 @@ The k8x project has been successfully initialized with the following structure:
 - `.gitignore` - Git ignore patterns
 
 ### CLI Structure (Cobra Framework)
+
 - `cmd/root.go` - Root command and configuration
 - `cmd/version.go` - Version information
 - `cmd/config.go` - Configuration management commands
 - `cmd/history.go` - Command history management
 
 ### Internal Packages
+
 - `internal/config/` - Configuration and directory management
 - `internal/llm/` - LLM provider interface and client
 - `internal/history/` - Command history tracking
 
 ### Documentation
+
 - `README.md` - Project overview and usage
 - `docs/README.md` - Detailed documentation
 - `examples/basic-usage.md` - Usage examples
 
 ### CI/CD & Release
+
 - `.github/workflows/ci.yml` - Continuous integration
 - `.github/workflows/release.yml` - Release automation
 - `.goreleaser.yaml` - Multi-platform builds and packaging
 
 ### Tests
+
 - `internal/config/config_test.go` - Configuration tests
 - `internal/llm/client_test.go` - LLM client tests
 
@@ -67,6 +73,7 @@ make dev
 ## 📋 Next Steps
 
 ### Immediate (Core Functionality)
+
 1. **LLM Provider Implementation**
    - Complete OpenAI provider
    - Complete Anthropic provider
@@ -83,6 +90,7 @@ make dev
    - `k8x interactive` - REPL mode
 
 ### Medium Term (Enhanced Features)
+
 4. **History & Undo System**
    - Complete history tracking
    - Implement undo functionality
@@ -99,6 +107,7 @@ make dev
    - Improve test coverage
 
 ### Long Term (Advanced Features)
+
 7. **Advanced AI Features**
    - Streaming responses
    - Context awareness
@@ -120,6 +129,7 @@ make dev
 ## 🔧 Build & Release
 
 The project is configured for automated releases:
+
 - Push tags to trigger releases
 - Multi-platform binaries (Linux, macOS, Windows)
 - Package formats: Homebrew, .deb, RPM, Snap

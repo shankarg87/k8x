@@ -1,4 +1,4 @@
-.PHONY: build test clean install lint fmt vet help dev release
+.PHONY: build test clean install lint fmt vet help dev release test-e2e
 
 # Build variables
 BINARY_NAME=k8x
@@ -26,9 +26,17 @@ build: ## Build the binary
 	@mkdir -p $(GOBIN)
 	@go build $(LDFLAGS) -o $(GOBIN)/$(BINARY_NAME) .
 
-test: ## Run tests
+test: ## Run unit tests
 	@echo "Running tests..."
-	@go test -v ./...
+	@go test -v ./... -short
+
+test-e2e: build ## Run end-to-end tests
+	@echo "Running E2E tests..."
+	@go test -v ./test/e2e/... -timeout 20m
+
+test-e2e-single: build ## Run a single E2E test (usage: make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis)
+	@echo "Running single E2E test: $(TEST)"
+	@go test -v ./test/e2e/... -run $(TEST)
 
 test-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."
@@ -61,7 +69,7 @@ mod-tidy: ## Run go mod tidy
 	@echo "Tidying modules..."
 	@go mod tidy
 
-dev: fmt vet lint test ## Run development checks (format, vet, lint, test)
+dev: fmt vet lint mod-tidy ## Run development checks (format, vet, lint, mod-tidy)
 
 release-test: ## Test release build with GoReleaser
 	@echo "Testing release build..."

@@ -175,6 +175,10 @@ k8x/
 └── .github/            # CI/CD workflows
 ```
 
+## Security
+
+Refer to [shell execution doc](docs/shell-execution-tool.md)
+
 ## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
@@ -183,84 +187,26 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚠️ Security Hardening
+## Development
 
-K8X issues real kubectl-style commands, inheriting significant privileges. Adopting best practices below helps mitigate risks:
+### Testing
 
-### 1. Sandbox K8X on the Host
+The k8x project has comprehensive test coverage:
 
-- **Dedicated Unix User[Preferred]**: Run K8X under an unprivileged user.
-  ```bash
-  sudo adduser --system --home /opt/k8x --group k8xsvc
-  sudo install -d -o k8xsvc -g k8xsvc /opt/k8x
-  sudo -u k8xsvc k8x ...
-  ```
-- **Sudoers Whitelist**: Restrict privilege elevation to only the K8X binary.
-  ```bash
-  # /etc/sudoers.d/k8x
-  k8x ALL=(root) NOPASSWD: /usr/bin/k8x
-  ```
-- **Container Sandboxing**: Use Firejail/Bubblewrap or rootless containers:
-  - Firejail example:
-    ```bash
-    firejail --private --net=none k8x ...
-    ```
-  - Rootless container example:
-    ```bash
-    docker run --rm \
-      --user 10000:10000 --read-only \
-      --cap-drop ALL \
-      --security-opt seccomp=default \
-      -v $HOME/.kube:/kube:ro \
-      ghcr.io/your-org/k8x:latest
-    ```
-- **macOS Sandboxing**: Isolate execution using sandbox-exec.
-  ```bash
-  sandbox-exec -f k8x.sb k8x ...
-  ```
+- **Unit tests**: Test individual components
+- **End-to-End tests**: Test the full functionality against real Kubernetes clusters using kind
 
+To run unit tests:
 
-### 2. Use a Least-Privilege Kubernetes Identity
-Grant only necessary permissions with a namespace-scoped Role:
-
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: k8x-operator
-rules:
-# Core resources
-- apiGroups: [""]
-  resources: ["pods", "services"]
-  verbs: ["get", "list", "watch"]
-# Workload resources
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "list", "watch"]
+```bash
+make test
 ```
 
-Then, bind the Role to a dedicated ServiceAccount:
+To run E2E tests (requires kind, kubectl, and Docker):
 
-```yaml
-# ServiceAccount lives in whatever namespace you prefer (e.g., k8x-tools)
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: k8x-sa
-  namespace: k8x-tools
----
-# ClusterRoleBinding grants the ClusterRole to that SA
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: k8x-binding
-subjects:
-- kind: ServiceAccount
-  name: k8x-sa
-  namespace: k8x-tools
-roleRef:
-  kind: ClusterRole
-  name: k8x-operator
-  apiGroup: rbac.authorization.k8s.io
+```bash
+export OPENAI_API_KEY=your-api-key-here
+make test-e2e
 ```
-Next, generate a kubeconfig referencing this ServiceAccount (e.g., export KUBECONFIG=~/.kube/k8x.conf).
+
+See [docs/testing.md](docs/testing.md) for more details on our testing approach.

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,7 +44,7 @@ kubernetes:
 settings:
   history_enabled: true
 `
-	if err := ioutil.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Failed to write test config file: %v", err)
 	}
 
@@ -56,7 +55,7 @@ selectedProvider: openai
 openai:
   api_key: "test-api-key"
 `
-	if err := ioutil.WriteFile(credsPath, []byte(credsContent), 0644); err != nil {
+	if err := os.WriteFile(credsPath, []byte(credsContent), 0644); err != nil {
 		t.Fatalf("Failed to write test credentials file: %v", err)
 	}
 

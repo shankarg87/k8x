@@ -7,6 +7,7 @@ k8x now includes a **shell execution tool** that allows the LLM agent to execute
 ## Features
 
 ### 🔧 Shell Execution Tool
+
 - **Function Name**: `execute_shell_command`
 - **Purpose**: Execute safe, read-only shell commands primarily for kubectl operations
 - **Safety First**: Built-in command filtering and validation
@@ -14,13 +15,31 @@ k8x now includes a **shell execution tool** that allows the LLM agent to execute
 ### 🛡️ Security Features
 
 #### Allowed Commands
-The tool only allows execution of these safe commands:
+
+The tool allows execution of these safe commands:
+
+**Core Commands:**
 - `kubectl` (read-only operations only)
 - `echo`, `cat`, `ls`, `pwd`, `whoami`, `date`, `uname`, `which`
-- `curl`, `ping`, `nslookup`, `dig` (for connectivity checks)
+- `curl`, `ping`, `nslookup`, `dig`, `wget`, `telnet`, `nc` (for connectivity checks)
 
-#### kubectl Safety Checks
+**Text Processing:**
+- `head`, `tail`, `grep`, `awk`, `sed`, `sort`, `uniq`, `wc`, `find`
+
+**System Information:**
+- `ps`, `netstat`, `ss`, `lsof`, `df`, `du`, `free`, `uptime`, `id`, `env`, `printenv`
+- `hostname`, `mount`, `lsblk`, `ip`, `ifconfig`, `route`, `arp`, `traceroute`
+
+**Data Processing:**
+- `jq`, `yq`, `base64`, `xxd`, `file`, `stat`
+
+**Shell Utilities:**
+- `history`, `alias`
+
+#### Kubectl Safety Checks
+
 Additional safety for kubectl commands - these operations are blocked:
+
 - Write operations: `create`, `apply`, `delete`, `patch`, `replace`, `edit`
 - Scaling: `scale`
 - Labeling: `annotate`, `label`
@@ -30,27 +49,123 @@ Additional safety for kubectl commands - these operations are blocked:
 - Node management: `drain`, `cordon`, `uncordon`, `taint`
 - Interactive operations: `exec`, `port-forward`, `proxy`, `attach`, `cp`
 
+#### Suggestions for additional security
+
+##### Sandbox K8X on the Host
+
+- **Dedicated Unix User[Preferred]**: Run K8X under an unprivileged user.
+
+  ```bash
+  sudo adduser --system --home /opt/k8x --group k8xsvc
+  sudo install -d -o k8xsvc -g k8xsvc /opt/k8x
+  sudo -u k8xsvc k8x ...
+  ```
+
+- **Sudoers Whitelist**: Restrict privilege elevation to only the K8X binary.
+
+  ```bash
+  # /etc/sudoers.d/k8x
+  k8x ALL=(root) NOPASSWD: /usr/bin/k8x
+  ```
+
+- **Container Sandboxing**: Use Firejail/Bubblewrap or rootless containers:
+  - Firejail example:
+
+    ```bash
+    firejail --private --net=none k8x ...
+    ```
+
+  - Rootless container example:
+
+    ```bash
+    docker run --rm \
+      --user 10000:10000 --read-only \
+      --cap-drop ALL \
+      --security-opt seccomp=default \
+      -v $HOME/.kube:/kube:ro \
+      ghcr.io/your-org/k8x:latest
+    ```
+
+- **macOS Sandboxing**: Isolate execution using sandbox-exec.
+
+  ```bash
+  sandbox-exec -f k8x.sb k8x ...
+  ```
+
+##### Use a Least-Privilege Kubernetes Identity (Optional)
+
+Grant only necessary permissions with a namespace-scoped Role:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8x-operator
+rules:
+# Core resources
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"]
+# Workload resources
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+```
+
+Then, bind the Role to a dedicated ServiceAccount:
+
+```yaml
+# ServiceAccount lives in whatever namespace you prefer (e.g., k8x-tools)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8x-sa
+  namespace: k8x-tools
+---
+# ClusterRoleBinding grants the ClusterRole to that SA
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8x-binding
+subjects:
+- kind: ServiceAccount
+  name: k8x-sa
+  namespace: k8x-tools
+roleRef:
+  kind: ClusterRole
+  name: k8x-operator
+  apiGroup: rbac.authorization.k8s.io
+```
+
+Next, generate a kubeconfig referencing this ServiceAccount (e.g., export KUBECONFIG=~/.kube/k8x.conf). Pass this kubeconfig file and context as configuration parameters to k8x.
+
+
 #### Command Timeout
+
 - All commands have a 30-second timeout to prevent hanging
 
 ## How It Works
 
 ### 1. LLM Integration
+
 - **OpenAI**: Full tool support using the latest OpenAI Go SDK
 - **Anthropic**: Simplified tool support (falls back to regular chat)
 - **Tool Definition**: JSON schema defines the tool interface
 
 ### 2. Execution Flow
+
 ```
 User Goal → LLM Planning → Tool Call → Shell Execution → Result → Next Step
 ```
 
 ### 3. Example Workflow
+
 ```bash
 k8x run "Check if any pods are failing in the default namespace"
 ```
 
 The LLM will:
+
 1. Plan the approach
 2. Call `execute_shell_command` with `kubectl get pods`
 3. Analyze the results
@@ -60,17 +175,20 @@ The LLM will:
 ## Technical Implementation
 
 ### Tool Manager (`internal/llm/tools.go`)
+
 - `NewToolManager(workDir)`: Creates a tool manager with shell executor
 - `ExecuteTool(name, arguments)`: Executes a tool by name
 - `GetTools()`: Returns available tool definitions
 
 ### Shell Executor
+
 - `NewShellExecutor(workDir)`: Creates executor with safety restrictions
 - `Execute(command)`: Runs command with security checks
 - Command parsing and validation
 - Output capture and error handling
 
 ### Provider Integration
+
 - **OpenAI**: `ChatWithTools()` method using native tool support
 - **Anthropic**: `ChatWithTools()` method with fallback to regular chat
 - **Unified Provider**: Automatic provider detection and tool routing
@@ -78,16 +196,19 @@ The LLM will:
 ## Usage Examples
 
 ### Basic Diagnostic
+
 ```bash
 k8x run "List all pods and show their status"
 ```
 
 ### Advanced Troubleshooting
+
 ```bash
 k8x run "Find why my nginx service is not receiving traffic"
 ```
 
 ### Resource Investigation
+
 ```bash
 k8x run "Check resource usage and identify any resource-constrained pods"
 ```
@@ -111,6 +232,7 @@ k8x run "Check resource usage and identify any resource-constrained pods"
 ## Integration with k8x Workflow
 
 The shell execution tool integrates seamlessly with k8x's existing workflow:
+
 - **History Tracking**: All commands and outputs are saved in `.k8x` files
 - **Step-by-Step Execution**: Each tool call becomes a step in the session
 - **LLM Context**: Tool results are fed back to the LLM for continued planning
