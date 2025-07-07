@@ -1,8 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -12,6 +15,8 @@ const (
 	DefaultHistoryDir = "history"
 	// CredentialsFile is the file containing LLM provider credentials
 	CredentialsFile = "credentials"
+	// DefaultConfigFileName is the default configuration file name
+	DefaultConfigFileName = "config.yaml"
 )
 
 // Config represents the application configuration
@@ -46,6 +51,8 @@ type KubernetesConfig struct {
 	Context string `yaml:"context,omitempty"`
 	// Namespace is the default namespace
 	Namespace string `yaml:"namespace,omitempty"`
+	// KubeConfigPath is the path to the kubeconfig file
+	KubeConfigPath string `yaml:"kubeconfig_path,omitempty"`
 }
 
 // GeneralSettings contains general application settings
@@ -102,4 +109,55 @@ func EnsureConfigDir() error {
 	}
 
 	return os.MkdirAll(historyDir, 0755)
+}
+
+// GetConfigPath returns the configuration file path
+func GetConfigPath() (string, error) {
+	configDir, err := GetConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, DefaultConfigFileName), nil
+}
+
+// LoadConfig loads the configuration from file
+func LoadConfig() (*Config, error) {
+	configPath, err := GetConfigPath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config path: %w", err)
+	}
+
+	// Check if config file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// Return default config if file doesn't exist
+		return &Config{
+			LLM: LLMConfig{
+				DefaultProvider: "openai",
+				Providers: map[string]ProviderConfig{
+					"openai": {
+						Model: "gpt-4",
+					},
+				},
+			},
+			Kubernetes: KubernetesConfig{},
+			Settings: GeneralSettings{
+				HistoryEnabled: true,
+			},
+		}, nil
+	}
+
+	// Read config file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Parse YAML
+	var config Config
+	err = yaml.Unmarshal(data, &config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	return &config, nil
 }

@@ -175,6 +175,10 @@ k8x/
 └── .github/            # CI/CD workflows
 ```
 
+## Security
+
+Refer to [shell execution doc](docs/shell-execution-tool.md)
+
 ## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
@@ -182,3 +186,27 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Development
+
+### Testing
+
+The k8x project has comprehensive test coverage:
+
+- **Unit tests**: Test individual components
+- **End-to-End tests**: Test the full functionality against real Kubernetes clusters using kind
+
+To run unit tests:
+
+```bash
+make test
+```
+
+To run E2E tests (requires kind, kubectl, and Docker):
+
+```bash
+export OPENAI_API_KEY=your-api-key-here
+make test-e2e
+```
+
+See [docs/testing.md](docs/testing.md) for more details on our testing approach.

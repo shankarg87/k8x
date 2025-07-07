@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 	Use:   "k8x",
 	Short: "Agentic kubectl - AI-powered Kubernetes operations",
 	Long: `k8x is an AI-powered CLI tool that acts as an intelligent layer on top of kubectl.
-It helps you manage Kubernetes resources through natural language commands and 
+It helps you manage Kubernetes resources through natural language commands and
 provides automated assistance for common operations.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:

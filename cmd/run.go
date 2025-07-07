@@ -51,12 +51,20 @@ Example:
 			return fmt.Errorf("failed to create session file: %w", err)
 		}
 
-		// First load the config to ensure LLM provider is set up
+		// First load the config to ensure LLM provider and Kubernetes are set up
 		// Check if ~/.k8x/credentials exists and contains at least one required key
 		_, err = config.GetCredentialsPath()
 		if err != nil {
 			return errors.New("k8x is not configured.\nHint: Please run `k8x configure`")
 		}
+
+		// Load application configuration
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load configuration: %w", err)
+		}
+
+		// Load credentials for LLM
 		creds, err := config.LoadCredentials()
 		if err != nil {
 			return errors.New("k8x is not configured correctly.\nHint: Please run `k8x configure`")
@@ -81,6 +89,9 @@ Example:
 
 		// Initialize tool manager for shell execution
 		toolManager := llm.NewToolManager(".")
+
+		// Set Kubernetes configuration for the tool manager's shell executor
+		toolManager.SetKubernetesConfig(&cfg.Kubernetes)
 		tools := toolManager.GetTools()
 
 		// Prepare system message to set context for k8x

@@ -4,7 +4,7 @@
 llm:
   # Default LLM provider to use (openai, anthropic)
   default_provider: "anthropic"
-  
+
   providers:
     openai:
       model: "gpt-4"
@@ -12,7 +12,7 @@ llm:
       options:
         temperature: "0.1"
         max_tokens: "2000"
-    
+
     anthropic:
       model: "claude-3-5-sonnet-20241022"
       base_url: ""  # Leave empty for default
@@ -25,6 +25,8 @@ kubernetes:
   context: ""
   # Default namespace (leave empty to use default namespace)
   namespace: ""
+  # Path to kubeconfig file (leave empty to use default ~/.kube/config)
+  kubeconfig_path: ""
 
 settings:
   # Enable verbose output

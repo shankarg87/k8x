@@ -12,7 +12,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage k8x configuration",
-	Long: `Manage k8x configuration including LLM providers, 
+	Long: `Manage k8x configuration including LLM providers,
 Kubernetes settings, and general preferences.`,
 }
 
