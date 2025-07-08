@@ -79,7 +79,7 @@ func (p *AnthropicProvider) Chat(ctx context.Context, messages []llm.Message) (*
 
 	req := anthropic.MessageNewParams{
 		Model:     anthropic.Model(p.model),
-		MaxTokens: 4096,
+		MaxTokens: defaultMaxTokens,
 		Messages:  anthroMsgs,
 	}
 	if systemPrompt != "" {
