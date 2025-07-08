@@ -13,6 +13,10 @@ import (
 	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
+const (
+	defaultMaxTokens = 4096
+)
+
 // AnthropicProvider implements the llm.Provider interface for Claude
 // It ensures no trailing whitespace on assistant messages to satisfy API requirements.
 type AnthropicProvider struct {
@@ -196,7 +200,7 @@ func (p *AnthropicProvider) ChatWithTools(ctx context.Context, messages []llm.Me
 
 	req := anthropic.MessageNewParams{
 		Model:     anthropic.Model(p.model),
-		MaxTokens: 4096,
+		MaxTokens: defaultMaxTokens,
 		Messages:  anthroMsgs,
 	}
 	if len(systemBlocks) > 0 {
