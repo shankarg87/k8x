@@ -26,11 +26,18 @@ planning and execution loop.
 Example:
   k8x run "Diagnose why my nginx pod is failing"
   k8x run "List all pods in the production namespace"
-  k8x run "Check resource usage across all nodes"`,
+  k8x run "Check resource usage across all nodes"
+  k8x run --confirm "Diagnose why my nginx pod is failing"`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		goal := args[0]
 		if strings.TrimSpace(goal) == "" {
 			return fmt.Errorf("goal cannot be empty")
+		}
+
+		// Get the confirm flag value
+		confirm, err := cmd.Flags().GetBool("confirm")
+		if err != nil {
+			return fmt.Errorf("failed to get confirm flag: %w", err)
 		}
 
 		manager, err := history.NewManager()
@@ -89,6 +96,9 @@ Example:
 
 		// Initialize tool manager for shell execution
 		toolManager := llm.NewToolManager(".")
+
+		// Set confirmation mode
+		toolManager.SetConfirmationMode(confirm)
 
 		// Set Kubernetes configuration for the tool manager's shell executor
 		toolManager.SetKubernetesConfig(&cfg.Kubernetes)
@@ -235,4 +245,7 @@ Guidelines:
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+
+	// Add confirm flag to get explicit permission before tool execution
+	runCmd.Flags().BoolP("confirm", "c", false, "Ask for confirmation before executing each tool")
 }

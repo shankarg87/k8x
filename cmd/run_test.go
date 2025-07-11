@@ -84,3 +84,28 @@ openai:
 		t.Errorf("Kubernetes.KubeConfigPath = %q, want %q", cfg.Kubernetes.KubeConfigPath, "/path/to/kubeconfig")
 	}
 }
+
+func TestRunCommandFlags(t *testing.T) {
+	// Test that the run command has the confirm flag properly configured
+	cmd := runCmd
+
+	// Check that the confirm flag exists
+	confirmFlag := cmd.Flags().Lookup("confirm")
+	if confirmFlag == nil {
+		t.Error("Run command should have a --confirm flag")
+		return
+	}
+
+	// Check flag properties
+	if confirmFlag.Shorthand != "c" {
+		t.Errorf("Confirm flag shorthand = %q, want %q", confirmFlag.Shorthand, "c")
+	}
+
+	if confirmFlag.DefValue != "false" {
+		t.Errorf("Confirm flag default value = %q, want %q", confirmFlag.DefValue, "false")
+	}
+
+	if confirmFlag.Usage != "Ask for confirmation before executing each tool" {
+		t.Errorf("Confirm flag usage = %q, want %q", confirmFlag.Usage, "Ask for confirmation before executing each tool")
+	}
+}
