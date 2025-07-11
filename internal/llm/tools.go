@@ -219,8 +219,9 @@ func GetShellExecutionTool(executor *ShellExecutor) Tool {
 
 // ToolManager manages available tools
 type ToolManager struct {
-	tools    map[string]Tool
-	executor *ShellExecutor
+	tools           map[string]Tool
+	executor        *ShellExecutor
+	confirmationMode bool
 }
 
 // SetKubernetesConfig sets the Kubernetes configuration for the shell executor
@@ -228,12 +229,18 @@ func (tm *ToolManager) SetKubernetesConfig(k8sConfig *config.KubernetesConfig) {
 	tm.executor.SetKubernetesConfig(k8sConfig)
 }
 
+// SetConfirmationMode enables or disables user confirmation before tool execution
+func (tm *ToolManager) SetConfirmationMode(confirm bool) {
+	tm.confirmationMode = confirm
+}
+
 // NewToolManager creates a new tool manager
 func NewToolManager(workDir string) *ToolManager {
 	executor := NewShellExecutor(workDir)
 	tm := &ToolManager{
-		tools:    make(map[string]Tool),
-		executor: executor,
+		tools:           make(map[string]Tool),
+		executor:        executor,
+		confirmationMode: false,
 	}
 
 	// Register shell execution tool
@@ -257,6 +264,28 @@ func (tm *ToolManager) ExecuteTool(name, arguments string) (string, error) {
 	tool, exists := tm.tools[name]
 	if !exists {
 		return "", fmt.Errorf("tool '%s' not found", name)
+	}
+
+	// If confirmation mode is enabled, ask for user permission
+	if tm.confirmationMode {
+		// Extract command from arguments for display
+		var displayCmd string
+		if name == "execute_shell_command" {
+			var params struct {
+				Command string `json:"command"`
+			}
+			if err := json.Unmarshal([]byte(arguments), &params); err == nil {
+				displayCmd = params.Command
+			} else {
+				displayCmd = arguments
+			}
+		} else {
+			displayCmd = fmt.Sprintf("%s with args: %s", name, arguments)
+		}
+
+		if !UserConfirmation(displayCmd) {
+			return "", fmt.Errorf("tool execution cancelled by user")
+		}
 	}
 
 	return tool.Handler(arguments)

@@ -83,3 +83,39 @@ func TestShellExecutorKubernetesConfigIntegration(t *testing.T) {
 		t.Errorf("KubeConfigPath = %q, want %q", executor.k8sConfig.KubeConfigPath, "/path/to/kubeconfig")
 	}
 }
+
+func TestToolManagerConfirmationMode(t *testing.T) {
+	toolManager := NewToolManager(".")
+
+	t.Run("confirmation mode disabled by default", func(t *testing.T) {
+		if toolManager.confirmationMode {
+			t.Error("ToolManager should have confirmation mode disabled by default")
+		}
+	})
+
+	t.Run("set confirmation mode", func(t *testing.T) {
+		toolManager.SetConfirmationMode(true)
+		if !toolManager.confirmationMode {
+			t.Error("SetConfirmationMode(true) should enable confirmation mode")
+		}
+
+		toolManager.SetConfirmationMode(false)
+		if toolManager.confirmationMode {
+			t.Error("SetConfirmationMode(false) should disable confirmation mode")
+		}
+	})
+
+	t.Run("confirmation mode execution without user input", func(t *testing.T) {
+		// Since we can't simulate user input in unit tests easily,
+		// we'll just test that the tool manager can handle the confirmation logic
+		// The actual user interaction would need to be tested manually or with integration tests
+		toolManager.SetConfirmationMode(true)
+		
+		// In confirmation mode, tools should fail if no user input is provided
+		// This is expected behavior since UserConfirmation would be waiting for input
+		// We'll just check that the confirmation mode is properly set
+		if !toolManager.confirmationMode {
+			t.Error("Confirmation mode should be enabled")
+		}
+	})
+}
