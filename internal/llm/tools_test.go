@@ -110,7 +110,7 @@ func TestToolManagerConfirmationMode(t *testing.T) {
 		// we'll just test that the tool manager can handle the confirmation logic
 		// The actual user interaction would need to be tested manually or with integration tests
 		toolManager.SetConfirmationMode(true)
-		
+
 		// In confirmation mode, tools should fail if no user input is provided
 		// This is expected behavior since UserConfirmation would be waiting for input
 		// We'll just check that the confirmation mode is properly set

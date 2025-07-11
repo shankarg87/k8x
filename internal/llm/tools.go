@@ -219,8 +219,8 @@ func GetShellExecutionTool(executor *ShellExecutor) Tool {
 
 // ToolManager manages available tools
 type ToolManager struct {
-	tools           map[string]Tool
-	executor        *ShellExecutor
+	tools            map[string]Tool
+	executor         *ShellExecutor
 	confirmationMode bool
 }
 
@@ -238,8 +238,8 @@ func (tm *ToolManager) SetConfirmationMode(confirm bool) {
 func NewToolManager(workDir string) *ToolManager {
 	executor := NewShellExecutor(workDir)
 	tm := &ToolManager{
-		tools:           make(map[string]Tool),
-		executor:        executor,
+		tools:            make(map[string]Tool),
+		executor:         executor,
 		confirmationMode: false,
 	}
 

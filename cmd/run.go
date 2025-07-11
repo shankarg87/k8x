@@ -245,7 +245,7 @@ Guidelines:
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	
+
 	// Add confirm flag to get explicit permission before tool execution
 	runCmd.Flags().BoolP("confirm", "c", false, "Ask for confirmation before executing each tool")
 }
