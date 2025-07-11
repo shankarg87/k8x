@@ -89,6 +89,9 @@ Example:
 
 		// Initialize tool manager for shell execution
 		toolManager := llm.NewToolManager(".")
+		
+		// Initialize summarizer for handling context window limits
+		summarizer := llm.NewSummarizer()
 
 		// Set Kubernetes configuration for the tool manager's shell executor
 		toolManager.SetKubernetesConfig(&cfg.Kubernetes)
@@ -131,8 +134,8 @@ Guidelines:
 			fmt.Println(strings.Repeat("=", 40))
 			fmt.Printf("📋 Step %d: Consulting LLM...\n", stepCount)
 
-			// Get response from LLM with tools
-			response, err := unifiedProvider.ChatWithTools(context.Background(), messages, tools)
+			// Get response from LLM with tools (with auto-summarization on context window errors)
+			response, messages, err := chatWithToolsAndSummarization(context.Background(), unifiedProvider, summarizer, messages, tools)
 			if err != nil {
 				return fmt.Errorf("failed to get LLM response: %w", err)
 			}
@@ -235,4 +238,39 @@ Guidelines:
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+}
+
+// chatWithToolsAndSummarization attempts to chat with tools, and automatically
+// summarizes the conversation if a context window error is encountered.
+// Returns the response and the potentially updated messages slice.
+func chatWithToolsAndSummarization(ctx context.Context, provider *providers.UnifiedProvider, summarizer *llm.Summarizer, messages []llm.Message, tools []llm.Tool) (*llm.Response, []llm.Message, error) {
+	// First attempt: try the regular chat with tools
+	response, err := provider.ChatWithTools(ctx, messages, tools)
+	
+	// If no context window error, return the response with original messages
+	if err == nil || !llm.IsContextWindowError(err) {
+		return response, messages, err
+	}
+	
+	// Context window exceeded - attempt auto-summarization
+	fmt.Println("⚠️  Context window exceeded. Auto-summarizing conversation...")
+	
+	// Summarize the conversation, keeping the last 4 message exchanges (8 messages)
+	summarizedMessages, summarizeErr := summarizer.SummarizeConversation(ctx, provider, messages, 8)
+	if summarizeErr != nil {
+		// If summarization fails, return the original error
+		fmt.Printf("❌ Failed to summarize conversation: %v\n", summarizeErr)
+		return nil, messages, fmt.Errorf("context window exceeded and summarization failed: %w", err)
+	}
+	
+	fmt.Printf("✅ Successfully summarized conversation from %d to %d messages\n", 
+		len(messages), len(summarizedMessages))
+	
+	// Retry with the summarized conversation
+	response, retryErr := provider.ChatWithTools(ctx, summarizedMessages, tools)
+	if retryErr != nil {
+		return nil, summarizedMessages, fmt.Errorf("failed after summarization: %w", retryErr)
+	}
+	
+	return response, summarizedMessages, nil
 }
