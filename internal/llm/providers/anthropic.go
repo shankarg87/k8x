@@ -60,13 +60,8 @@ func getDefaultContextLengthForAnthropic(model string) int {
 	defaults := map[string]int{
 		string(anthropic.ModelClaudeSonnet4_0):          200000,
 		string(anthropic.ModelClaude3_5SonnetLatest):    200000,
-		string(anthropic.ModelClaude3_5Sonnet20241022):  200000,
 		string(anthropic.ModelClaude3_5HaikuLatest):     200000,
-		string(anthropic.ModelClaude3_5Haiku20241022):   200000,
 		string(anthropic.ModelClaudeOpus4_0):            200000,
-		string(anthropic.ModelClaude_3_Haiku_20240307):  200000,
-		string(anthropic.ModelClaude_3_Sonnet_20240229): 200000,
-		string(anthropic.ModelClaude_3_Opus_20240229):   200000,
 	}
 	
 	if contextLength, exists := defaults[model]; exists {
