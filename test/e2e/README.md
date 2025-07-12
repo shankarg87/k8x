@@ -42,12 +42,13 @@ go test -v ./test/e2e/... -run TestCrashLoopBackoffDiagnosis
 1. **CrashLoopBackOff**: Tests k8x's ability to diagnose a pod in CrashLoopBackOff state due to an exit code 1
 2. **ImagePullBackOff**: Tests diagnosing a pod that can't pull its container image
 3. **Missing ConfigMap**: Tests diagnosing a pod that depends on a non-existent ConfigMap
+4. **Kubectl Exit Code Validation**: Tests the framework's ability to handle kubectl command failures and validates that k8x can analyze various resource scenarios
 
 ## Adding New Test Cases
 
 To add a new test scenario:
 
-1. Create a new scenario function in `framework/scenarios/pod_failures.go`
+1. Create a new scenario function in `framework/scenarios/pod_failures.go` or `framework/scenarios/opa_gatekeeper.go`
 2. Add a new test function in `run_e2e_test.go`
 3. Ensure the test creates a unique kind cluster name to avoid conflicts with existing tests
 

@@ -36,7 +36,7 @@ test-e2e: build ## Run end-to-end tests
 
 test-e2e-single: build ## Run a single E2E test (usage: make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis)
 	@echo "Running single E2E test: $(TEST)"
-	@go test -v ./test/e2e/... -run $(TEST)
+	@go test -v ./test/e2e/... -run $(TEST) -preserve-on-failure
 
 test-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."
