@@ -145,12 +145,7 @@ Guidelines:
 			fmt.Println(strings.Repeat("=", 40))
 			fmt.Printf("📋 Step %d: Consulting LLM...\n", stepCount)
 			
-			// Calculate and display token usage before the call
-			currentTokens := unifiedProvider.EstimateTokens(messages)
-			contextLength := unifiedProvider.GetContextLength()
-			usagePercent := (currentTokens * 100) / contextLength
-			fmt.Printf("🔢 Current tokens: %d/%d (%.1f%%)\n", 
-				currentTokens, contextLength, float64(usagePercent))
+
 
 			// Get response from LLM with tools (with auto-summarization on context window errors)
 			response, messages, err := chatWithToolsAndSummarization(context.Background(), unifiedProvider, summarizer, messages, tools)
