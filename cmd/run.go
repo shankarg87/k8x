@@ -263,6 +263,7 @@ func init() {
 // summarizes the conversation if the context usage exceeds the configured threshold,
 // and handles context window errors as a fallback.
 // Returns the response and the potentially updated messages slice.
+// Note: The caller is responsible for adding the response to the conversation history.
 func chatWithToolsAndSummarization(ctx context.Context, provider *providers.UnifiedProvider, summarizer *llm.Summarizer, messages []llm.Message, tools []llm.Tool) (*llm.Response, []llm.Message, error) {
 	// Check if we should summarize based on percentage threshold
 	if summarizer.ShouldSummarize(provider, messages) {
