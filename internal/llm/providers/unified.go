@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"k8x/internal/config"
 	"k8x/internal/llm"
 )
 
@@ -41,6 +42,33 @@ func NewUnifiedProvider(creds Credentials) (*UnifiedProvider, error) {
 		provider = NewOpenAIProvider(creds.OpenAI.APIKey, "", "")
 	case "anthropic":
 		provider = NewAnthropicProvider(creds.Anthropic.APIKey, "", "")
+	default:
+		return nil, fmt.Errorf("unsupported provider: %s", creds.SelectedProvider)
+	}
+
+	if !provider.IsConfigured() {
+		return nil, fmt.Errorf("%s provider not configured", provider.Name())
+	}
+
+	return &UnifiedProvider{provider: provider}, nil
+}
+
+// NewUnifiedProviderWithConfig instantiates a UnifiedProvider with configuration support.
+func NewUnifiedProviderWithConfig(creds Credentials, providerConfig config.ProviderConfig) (*UnifiedProvider, error) {
+	var provider llm.Provider
+	switch creds.SelectedProvider {
+	case "openai":
+		p := NewOpenAIProvider(creds.OpenAI.APIKey, providerConfig.BaseURL, providerConfig.Model)
+		if providerConfig.ContextLength > 0 {
+			p.SetContextLength(providerConfig.ContextLength)
+		}
+		provider = p
+	case "anthropic":
+		p := NewAnthropicProvider(creds.Anthropic.APIKey, providerConfig.BaseURL, providerConfig.Model)
+		if providerConfig.ContextLength > 0 {
+			p.SetContextLength(providerConfig.ContextLength)
+		}
+		provider = p
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", creds.SelectedProvider)
 	}
@@ -94,4 +122,14 @@ func (u *UnifiedProvider) ChatWithTools(ctx context.Context, messages []llm.Mess
 		// Fallback to regular chat if tools not supported
 		return u.provider.Chat(ctx, messages)
 	}
+}
+
+// EstimateTokens estimates token count using the underlying provider
+func (u *UnifiedProvider) EstimateTokens(messages []llm.Message) int {
+	return u.provider.EstimateTokens(messages)
+}
+
+// GetContextLength returns the context window size of the underlying provider
+func (u *UnifiedProvider) GetContextLength() int {
+	return u.provider.GetContextLength()
 }

@@ -8,16 +8,38 @@ import (
 
 // Summarizer provides functionality to summarize conversation history
 // when the context window is exceeded.
-type Summarizer struct{}
+type Summarizer struct {
+	config SummarizerConfig
+}
 
-// NewSummarizer creates a new conversation summarizer
-func NewSummarizer() *Summarizer {
-	return &Summarizer{}
+// SummarizerConfig contains configuration for the summarizer
+type SummarizerConfig struct {
+	// SummarizeAtPercent is the percentage of context length at which to trigger summarization (default 70%)
+	SummarizeAtPercent int
+	// KeepConversations is the number of recent conversation exchanges to keep intact (default 1)
+	KeepConversations int
+}
+
+// NewSummarizer creates a new conversation summarizer with the given configuration
+func NewSummarizer(config SummarizerConfig) *Summarizer {
+	// Set defaults if not provided
+	if config.SummarizeAtPercent <= 0 {
+		config.SummarizeAtPercent = 70
+	}
+	if config.KeepConversations <= 0 {
+		config.KeepConversations = 1
+	}
+	
+	return &Summarizer{config: config}
 }
 
 // SummarizeConversation condenses a long conversation while preserving
-// the system prompt, goal, and recent context.
-func (s *Summarizer) SummarizeConversation(ctx context.Context, provider Provider, messages []Message, keepRecent int) ([]Message, error) {
+// the system prompt, goal, and recent context based on configuration.
+func (s *Summarizer) SummarizeConversation(ctx context.Context, provider Provider, messages []Message) ([]Message, error) {
+	// Calculate how many recent messages to keep based on conversation count
+	// Each conversation typically consists of 2 messages (user + assistant)
+	keepRecent := s.config.KeepConversations * 2
+	
 	if len(messages) <= keepRecent+2 { // system + goal + recent messages
 		return messages, nil
 	}
@@ -155,4 +177,13 @@ func IsContextWindowError(err error) bool {
 	}
 	
 	return false
+}
+
+// ShouldSummarize checks if the conversation should be summarized based on token usage
+func (s *Summarizer) ShouldSummarize(provider Provider, messages []Message) bool {
+	contextLength := provider.GetContextLength()
+	currentTokens := provider.EstimateTokens(messages)
+	
+	threshold := (contextLength * s.config.SummarizeAtPercent) / 100
+	return currentTokens >= threshold
 }

@@ -20,10 +20,11 @@ const (
 // AnthropicProvider implements the llm.Provider interface for Claude
 // It ensures no trailing whitespace on assistant messages to satisfy API requirements.
 type AnthropicProvider struct {
-	client  *anthropic.Client
-	model   string
-	apiKey  string
-	baseURL string
+	client        *anthropic.Client
+	model         string
+	apiKey        string
+	baseURL       string
+	contextLength int
 }
 
 // NewAnthropicProvider creates a new Anthropic provider with defaults.
@@ -42,12 +43,38 @@ func NewAnthropicProvider(apiKey, baseURL, model string) *AnthropicProvider {
 	// NewClient returns an anthropic.Client (value); take its address to match *anthropic.Client
 	clientVal := anthropic.NewClient(opts...)
 
+	// Get default context length for the model
+	contextLength := getDefaultContextLengthForAnthropic(model)
+
 	return &AnthropicProvider{
-		client:  &clientVal,
-		model:   model,
-		apiKey:  apiKey,
-		baseURL: baseURL,
+		client:        &clientVal,
+		model:         model,
+		apiKey:        apiKey,
+		baseURL:       baseURL,
+		contextLength: contextLength,
 	}
+}
+
+// getDefaultContextLengthForAnthropic returns default context lengths for Anthropic models
+func getDefaultContextLengthForAnthropic(model string) int {
+	defaults := map[string]int{
+		string(anthropic.ModelClaudeSonnet4_0):          200000,
+		string(anthropic.ModelClaude3_5SonnetLatest):    200000,
+		string(anthropic.ModelClaude3_5Sonnet20241022):  200000,
+		string(anthropic.ModelClaude3_5HaikuLatest):     200000,
+		string(anthropic.ModelClaude3_5Haiku20241022):   200000,
+		string(anthropic.ModelClaudeOpus4_0):            200000,
+		string(anthropic.ModelClaude_3_Haiku_20240307):  200000,
+		string(anthropic.ModelClaude_3_Sonnet_20240229): 200000,
+		string(anthropic.ModelClaude_3_Opus_20240229):   200000,
+	}
+	
+	if contextLength, exists := defaults[model]; exists {
+		return contextLength
+	}
+	
+	// Default fallback for Anthropic models
+	return 200000
 }
 
 // Name returns the provider name
@@ -253,4 +280,38 @@ func (p *AnthropicProvider) ChatWithTools(ctx context.Context, messages []llm.Me
 // Stream is not yet supported for Anthropic
 func (p *AnthropicProvider) Stream(ctx context.Context, messages []llm.Message) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("streaming not yet implemented for Anthropic provider")
+}
+
+// EstimateTokens provides a rough estimation of token count for messages
+func (p *AnthropicProvider) EstimateTokens(messages []llm.Message) int {
+	totalTokens := 0
+	
+	for _, msg := range messages {
+		// Rough estimation: 1 token ≈ 4 characters for English text
+		// Add some overhead for message structure
+		contentTokens := len(msg.Content) / 4
+		totalTokens += contentTokens + 10 // +10 for message overhead
+		
+		// Add tokens for tool calls if present
+		if len(msg.ToolCalls) > 0 {
+			for _, tc := range msg.ToolCalls {
+				totalTokens += len(tc.Function.Name)/4 + len(tc.Function.Arguments)/4 + 20
+			}
+		}
+	}
+	
+	// Add some overhead for the overall request structure
+	return totalTokens + 50
+}
+
+// GetContextLength returns the context window size for this provider
+func (p *AnthropicProvider) GetContextLength() int {
+	return p.contextLength
+}
+
+// SetContextLength allows overriding the context length from configuration
+func (p *AnthropicProvider) SetContextLength(length int) {
+	if length > 0 {
+		p.contextLength = length
+	}
 }

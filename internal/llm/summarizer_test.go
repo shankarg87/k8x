@@ -56,7 +56,10 @@ func TestIsContextWindowError(t *testing.T) {
 }
 
 func TestSummarizeConversation(t *testing.T) {
-	summarizer := NewSummarizer()
+	summarizer := NewSummarizer(SummarizerConfig{
+		SummarizeAtPercent: 70,
+		KeepConversations:  1,
+	})
 	
 	// Mock provider that returns a simple summary
 	mockProvider := &MockProvider{
@@ -65,6 +68,7 @@ func TestSummarizeConversation(t *testing.T) {
 		chatResp: &Response{
 			Content: "This is a test summary of the conversation.",
 		},
+		contextLength: 4096,
 	}
 	
 	messages := []Message{
@@ -78,12 +82,12 @@ func TestSummarizeConversation(t *testing.T) {
 		{Role: "user", Content: "What's the status of pod1?"},
 	}
 	
-	summarized, err := summarizer.SummarizeConversation(context.Background(), mockProvider, messages, 2)
+	summarized, err := summarizer.SummarizeConversation(context.Background(), mockProvider, messages)
 	if err != nil {
 		t.Fatalf("SummarizeConversation failed: %v", err)
 	}
 	
-	// Should have: system + goal + summary + 2 recent messages
+	// Should have: system + goal + summary + 2 recent messages (1 conversation = 2 messages)
 	expectedLength := 5 // system, goal, summary, 2 recent
 	if len(summarized) != expectedLength {
 		t.Errorf("Expected %d messages, got %d", expectedLength, len(summarized))
@@ -106,10 +110,14 @@ func TestSummarizeConversation(t *testing.T) {
 }
 
 func TestSummarizeConversationShortHistory(t *testing.T) {
-	summarizer := NewSummarizer()
+	summarizer := NewSummarizer(SummarizerConfig{
+		SummarizeAtPercent: 70,
+		KeepConversations:  1,
+	})
 	mockProvider := &MockProvider{
-		name:       "mock",
-		configured: true,
+		name:          "mock",
+		configured:    true,
+		contextLength: 4096,
 	}
 	
 	// Short conversation that doesn't need summarization
@@ -119,7 +127,7 @@ func TestSummarizeConversationShortHistory(t *testing.T) {
 		{Role: "assistant", Content: "Sure, I'll help"},
 	}
 	
-	summarized, err := summarizer.SummarizeConversation(context.Background(), mockProvider, messages, 2)
+	summarized, err := summarizer.SummarizeConversation(context.Background(), mockProvider, messages)
 	if err != nil {
 		t.Fatalf("SummarizeConversation failed: %v", err)
 	}
@@ -133,6 +141,38 @@ func TestSummarizeConversationShortHistory(t *testing.T) {
 		if summarized[i].Content != msg.Content {
 			t.Errorf("Message %d content mismatch", i)
 		}
+	}
+}
+
+func TestShouldSummarize(t *testing.T) {
+	summarizer := NewSummarizer(SummarizerConfig{
+		SummarizeAtPercent: 70,
+		KeepConversations:  1,
+	})
+	
+	mockProvider := &MockProvider{
+		name:          "mock",
+		configured:    true,
+		contextLength: 1000, // Small context for easy testing
+	}
+	
+	// Small message that shouldn't trigger summarization
+	smallMessages := []Message{
+		{Role: "user", Content: "Hi"}, // ~1 token
+	}
+	
+	// Large message that should trigger summarization (>70% of 1000 = 700 tokens)
+	// Each "word " is 5 chars, so 800 * 5 = 4000 chars, which is 1000+ tokens
+	largeMessages := []Message{
+		{Role: "user", Content: strings.Repeat("word ", 800)}, // ~1000+ tokens
+	}
+	
+	if summarizer.ShouldSummarize(mockProvider, smallMessages) {
+		t.Error("Should not summarize small messages")
+	}
+	
+	if !summarizer.ShouldSummarize(mockProvider, largeMessages) {
+		t.Error("Should summarize large messages")
 	}
 }
 

@@ -19,6 +19,12 @@ type Provider interface {
 
 	// IsConfigured returns true if the provider is properly configured
 	IsConfigured() bool
+	
+	// EstimateTokens estimates the token count for the given messages
+	EstimateTokens(messages []Message) int
+	
+	// GetContextLength returns the context window size for this provider
+	GetContextLength() int
 }
 
 // Message represents a chat message

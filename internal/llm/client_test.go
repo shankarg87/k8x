@@ -8,10 +8,11 @@ import (
 
 // MockProvider implements the Provider interface for testing
 type MockProvider struct {
-	name       string
-	configured bool
-	chatResp   *Response
-	chatErr    error
+	name          string
+	configured    bool
+	chatResp      *Response
+	chatErr       error
+	contextLength int
 }
 
 func (m *MockProvider) Name() string {
@@ -32,6 +33,22 @@ func (m *MockProvider) Stream(ctx context.Context, messages []Message) (io.ReadC
 
 func (m *MockProvider) IsConfigured() bool {
 	return m.configured
+}
+
+func (m *MockProvider) EstimateTokens(messages []Message) int {
+	// Simple mock implementation - just count characters roughly
+	total := 0
+	for _, msg := range messages {
+		total += len(msg.Content) / 4 // rough estimation
+	}
+	return total
+}
+
+func (m *MockProvider) GetContextLength() int {
+	if m.contextLength > 0 {
+		return m.contextLength
+	}
+	return 4096 // default for testing
 }
 
 func TestClient_RegisterProvider(t *testing.T) {
