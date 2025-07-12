@@ -146,7 +146,6 @@ Guidelines:
 			fmt.Printf("📋 Step %d: Consulting LLM...\n", stepCount)
 			
 
-
 			// Get response from LLM with tools (with auto-summarization on context window errors)
 			response, messages, err := chatWithToolsAndSummarization(context.Background(), unifiedProvider, summarizer, messages, tools)
 			if err != nil {
@@ -167,50 +166,9 @@ Guidelines:
 				Content: response.Content,
 			}
 
-			// Handle tool calls if present
 			if len(response.ToolCalls) > 0 {
 				assistantMsg.ToolCalls = response.ToolCalls
-				messages = append(messages, assistantMsg)
-
-				// Execute tool calls
-				for _, toolCall := range response.ToolCalls {
-					fmt.Printf("\n🔧 Executing tool: %s\n", toolCall.Function.Name)
-					fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
-
-					// Execute the tool
-					result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
-					if err != nil {
-						result = fmt.Sprintf("Error: %v", err)
-						fmt.Printf("❌ Tool execution failed: %v\n", err)
-					} else {
-						fmt.Printf("✅ Tool execution successful\n")
-					}
-
-					fmt.Printf("📄 Output:\n%s\n", result)
-
-					// Add tool result to conversation
-					messages = append(messages, llm.Message{
-						Role:       "tool",
-						Content:    result,
-						ToolCallID: toolCall.ID,
-					})
-
-					// Record the step in history
-					step := history.Step{
-						Description: fmt.Sprintf("Executed: %s", toolCall.Function.Name),
-						Command:     toolCall.Function.Arguments,
-						Output:      result,
-						Type:        "command",
-					}
-
-					if err := manager.AddStep(entry, step); err != nil {
-						return fmt.Errorf("failed to add step to history: %w", err)
-					}
-				}
 			} else {
-				// No tool calls, just add the assistant message
-				messages = append(messages, assistantMsg)
-
 				// Add LLM response to history as a step
 				step := history.Step{
 					Description: fmt.Sprintf("LLM Planning Step %d", stepCount),
@@ -218,7 +176,40 @@ Guidelines:
 					Output:      response.Content,
 					Type:        "step",
 				}
+				if err := manager.AddStep(entry, step); err != nil {
+					return fmt.Errorf("failed to add step to history: %w", err)
+				}
+				
+			}
+			messages = append(messages, assistantMsg)
+			// Execute tool calls
+			for _, toolCall := range response.ToolCalls {
+				fmt.Printf("\n🔧 Executing tool: %s\n", toolCall.Function.Name)
+				fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
+				// Execute the tool
+				result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
+				if err != nil {
+					result = fmt.Sprintf("Error: %v", err)
+					fmt.Printf("❌ Tool execution failed: %v\n", err)
+				} else {
+					fmt.Printf("✅ Tool execution successful\n")
+				}
 
+				fmt.Printf("📄 Output:\n%s\n", result)
+
+				// Add tool result to conversation
+				messages = append(messages, llm.Message{
+					Role:       "tool",
+					Content:    result,
+					ToolCallID: toolCall.ID,
+				})
+				// Record the step in history
+				step := history.Step{
+					Description: fmt.Sprintf("Executed: %s", toolCall.Function.Name),
+					Command:     toolCall.Function.Arguments,
+					Output:      result,
+					Type:        "command",
+				}
 				if err := manager.AddStep(entry, step); err != nil {
 					return fmt.Errorf("failed to add step to history: %w", err)
 				}
