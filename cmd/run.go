@@ -175,7 +175,7 @@ Example:
 			} else {
 				toolsCheck += fmt.Sprintf("- %s: not available\n", tool)
 				fmt.Printf("❌ %s: not available\n", tool)
-				if tool == "helm" {
+				if tool == "helm" || tool == "jq" {
 					missingTools = append(missingTools, tool)
 				}
 			}
