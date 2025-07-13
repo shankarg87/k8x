@@ -1,16 +1,15 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"k8x/internal/config"
+	k8xcontext "k8x/internal/context"
 	"k8x/internal/history"
 	"k8x/internal/llm"
 	"k8x/internal/llm/providers"
@@ -114,239 +113,11 @@ Also supported:
 		// Gather cluster context information before starting
 		fmt.Println("🔍 Gathering cluster information...")
 
-		// Get current cluster name from kubeconfig
-		clusterName, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl config view --minify -o jsonpath='{.clusters[0].name}'"}`)
-		if err != nil || strings.TrimSpace(clusterName) == "" {
-			fmt.Printf("⚠️  Could not determine cluster name from kubeconfig: %v\n", err)
-		} else {
-			fmt.Printf("🌐 Cluster Name: %s\n", strings.TrimSpace(clusterName))
-		}
-
-		// Get kubectl version (client only)
-		kubectlVersion, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl version --client --output=yaml | grep 'gitVersion:' | head -1 | awk '{print $2}'"}`)
-		if err != nil || strings.TrimSpace(kubectlVersion) == "" {
-			// Fallback to short version command
-			kubectlVersionFallback, errFallback := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl version --client --short"}`)
-			if errFallback != nil {
-				kubectlVersion = fmt.Sprintf("Error getting kubectl version: %v (fallback error: %v)", err, errFallback)
-				fmt.Printf("⚠️  kubectl client version: %s\n", kubectlVersion)
-			} else {
-				kubectlVersion = strings.TrimSpace(kubectlVersionFallback)
-				fmt.Printf("✅ kubectl client version: %s\n", kubectlVersion)
-			}
-		} else {
-			kubectlVersion = strings.TrimSpace(kubectlVersion)
-			fmt.Printf("✅ kubectl client version: %s\n", kubectlVersion)
-		}
-
-		// Get cluster version (server only)
-		clusterVersion, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl version --output=yaml 2>/dev/null | grep 'gitVersion:' | tail -1 | awk '{print $2}'"}`)
-		if err != nil || strings.TrimSpace(clusterVersion) == "" {
-			clusterVersion = "No cluster connection available"
-			fmt.Printf("⚠️  kubernetes cluster version: Unable to connect to cluster\n")
-		} else {
-			clusterVersion = strings.TrimSpace(clusterVersion)
-			fmt.Printf("✅ kubernetes cluster version: %s\n", clusterVersion)
-		}
-
-		// Get available namespaces
-		namespaces, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "kubectl get namespaces --output=name"}`)
+		// Build context info string using new function (prints as it gathers)
+		contextInfo, err := k8xcontext.BuildContextInfoString(toolManager, []string{"~/.zsh_history", "~/.bash_history"})
 		if err != nil {
-			namespaces = "No cluster connection available"
-			fmt.Printf("\n⚠️  Namespaces: Unable to connect to cluster (error: %v)\n", err)
-		} else {
-			namespaceList := strings.Split(strings.TrimSpace(namespaces), "\n")
-			fmt.Printf("\n✅ Namespaces (%d found):\n", len(namespaceList))
-			// Print namespace names for user visibility
-			for _, ns := range namespaceList {
-				// Remove "namespace/" prefix if present
-				nsName := strings.TrimPrefix(ns, "namespace/")
-				if nsName != "" {
-					fmt.Printf("  • %s\n", nsName)
-				}
-			}
-			fmt.Println()
+			return fmt.Errorf("failed to build context info: %w", err)
 		}
-
-		// Check if we have cluster connectivity
-		kubectlFailed := strings.Contains(kubectlVersion, "Error getting kubectl version")
-		clusterVersionFailed := strings.Contains(clusterVersion, "No cluster connection")
-		namespacesFailed := strings.Contains(namespaces, "No cluster connection")
-
-		if kubectlFailed {
-			fmt.Printf("\n⚠️  Warning: kubectl client version could not be determined. kubectl may not be installed or configured properly.\n")
-		}
-
-		if clusterVersionFailed && namespacesFailed {
-			fmt.Printf("\n❌ Error: No Kubernetes cluster connection detected.\n")
-			fmt.Printf("   Make sure kubectl is configured and you have access to a cluster.\n")
-			fmt.Printf("   k8x requires an active cluster connection to operate.\n\n")
-			fmt.Printf("Troubleshooting steps:\n")
-			fmt.Printf("  1. Check if kubectl is configured: kubectl config current-context\n")
-			fmt.Printf("  2. Verify cluster access: kubectl cluster-info\n")
-			fmt.Printf("  3. Check your kubeconfig: kubectl config view\n")
-			return fmt.Errorf("no Kubernetes cluster connection available")
-		} else if clusterVersionFailed {
-			fmt.Printf("\n⚠️  Warning: Cluster version could not be determined, but namespaces are available. Some operations may be limited.\n")
-		} else if namespacesFailed {
-			fmt.Printf("\n⚠️  Warning: Namespaces could not be listed, but cluster version is available. Some operations may be limited.\n")
-		}
-
-		// Check for common tools
-		fmt.Println("🔧 Checking available tools...")
-		toolsCheck := ""
-		var helmAvailable bool
-		missingTools := []string{}
-		for _, tool := range []string{"kubectl", "helm", "kustomize", "docker", "git", "jq"} {
-			result, err := toolManager.ExecuteTool("execute_shell_command", fmt.Sprintf(`{"command": "which %s"}`, tool))
-			if err == nil && strings.TrimSpace(result) != "" {
-				version, _ := toolManager.ExecuteTool("execute_shell_command", fmt.Sprintf(`{"command": "%s version --short 2>/dev/null || %s --version 2>/dev/null || echo 'version unknown'"}`, tool, tool))
-				toolsCheck += fmt.Sprintf("- %s: %s (%s)\n", tool, strings.TrimSpace(result), strings.TrimSpace(version))
-				fmt.Printf("✅ %s: available at %s\n", tool, strings.TrimSpace(result))
-				if tool == "helm" {
-					helmAvailable = true
-				}
-			} else {
-				toolsCheck += fmt.Sprintf("- %s: not available\n", tool)
-				fmt.Printf("❌ %s: not available\n", tool)
-				if tool == "helm" || tool == "jq" {
-					missingTools = append(missingTools, tool)
-				}
-			}
-		}
-
-		// Fail if jq or helm is missing
-		if len(missingTools) > 0 {
-			fmt.Printf("\n❌ Error: Required tools missing: %s\n", strings.Join(missingTools, ", "))
-			fmt.Printf("   Please install the missing tools and try again.\n")
-			return fmt.Errorf("missing required tools: %s", strings.Join(missingTools, ", "))
-		}
-
-		// Get Helm releases if Helm is available
-		var helmReleases string
-		if helmAvailable {
-			fmt.Println("🎯 Gathering Helm releases...")
-			releases, err := toolManager.ExecuteTool("execute_shell_command", `{"command": "helm list --all-namespaces"}`)
-			if err != nil {
-				helmReleases = fmt.Sprintf("Error getting Helm releases: %v", err)
-				fmt.Printf("⚠️  Helm releases: %s\n", helmReleases)
-			} else {
-				helmReleases = releases
-				releaseLines := strings.Split(strings.TrimSpace(releases), "\n")
-				if len(releaseLines) > 1 { // More than just header
-					fmt.Printf("✅ Found %d Helm releases\n", len(releaseLines)-1)
-				} else {
-					fmt.Printf("✅ No Helm releases found\n")
-				}
-			}
-		} else {
-			helmReleases = "Helm not available"
-		}
-
-		// Dynamically gather recent CLI commands from shell history
-		recentExamples := ""
-		historyFiles := []string{"~/.zsh_history", "~/.bash_history"}
-		historyPath := ""
-		for _, file := range historyFiles {
-			path := file
-			if strings.HasPrefix(file, "~") {
-				homeDir, err := os.UserHomeDir()
-				if err == nil {
-					path = strings.Replace(file, "~", homeDir, 1)
-				}
-			}
-			if _, err := os.Stat(path); err == nil {
-				historyPath = path
-				break
-			}
-		}
-		cmds := []string{}
-		cmdSet := make(map[string]struct{})
-		if historyPath != "" {
-			file, err := os.Open(historyPath)
-			if err == nil {
-				defer func() {
-					if err := file.Close(); err != nil {
-						fmt.Printf("⚠️  Error closing shell history file: %v\n", err)
-					}
-				}()
-				scanner := bufio.NewScanner(file)
-				var lines []string
-				for scanner.Scan() {
-					lines = append(lines, scanner.Text())
-				}
-				if err := scanner.Err(); err == nil {
-					for i := len(lines) - 1; i >= 0 && len(cmds) < 50; i-- {
-						line := lines[i]
-						if line == "" || strings.HasPrefix(line, ":") {
-							continue
-						}
-						// Only consider commands relevant to CLI usage
-						if strings.HasPrefix(line, "k8x") || strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "docker") || strings.HasPrefix(line, "git") {
-							if _, exists := cmdSet[line]; !exists {
-								cmdSet[line] = struct{}{}
-								cmds = append(cmds, line)
-							}
-						}
-					}
-					// Take the most recent 20 unique commands
-					if len(cmds) > 20 {
-						cmds = cmds[:20]
-					}
-					if len(cmds) > 0 {
-						recentExamples = "Recent Examples:\n" + strings.Join(cmds, "\n")
-						fmt.Printf("📝 Found %d distinct recent CLI commands in shell history.\n", len(cmds))
-					}
-				} else {
-					fmt.Printf("⚠️  Could not read shell history: %v\n", err)
-				}
-			} else {
-				fmt.Printf("⚠️  Could not open shell history: %v\n", err)
-			}
-		}
-
-		// Ensure context values have (unavailable) as default if empty
-		if strings.TrimSpace(kubectlVersion) == "" {
-			kubectlVersion = "(unavailable)"
-		}
-		if strings.TrimSpace(clusterVersion) == "" {
-			clusterVersion = "(unavailable)"
-		}
-		if strings.TrimSpace(namespaces) == "" {
-			namespaces = "(unavailable)"
-		}
-		if strings.TrimSpace(toolsCheck) == "" {
-			toolsCheck = "(unavailable)"
-		}
-		if strings.TrimSpace(helmReleases) == "" {
-			helmReleases = "(unavailable)"
-		}
-		if strings.TrimSpace(recentExamples) == "" {
-			recentExamples = "(unavailable)"
-		}
-
-		contextInfo := fmt.Sprintf(`
-Here's the current cluster context information: (use only the relevant information towards the goal)
-================
-
-kubectl Version:
-%s
-
-Cluster Version:
-%s
-
-Available Namespaces:
-%s
-
-Available CLI Commands:
-%s
-
-Helm Releases:
-%s
-
-Recent CLI Examples (may be unoptimized, but useful for context):
-%s
-`, kubectlVersion, clusterVersion, namespaces, toolsCheck, helmReleases, recentExamples)
 
 		// Prepare system message to set context for k8x
 		systemPrompt := fmt.Sprintf(`You are k8x, a Kubernetes shell-workflow assistant specialized in read-only diagnostics and operations.
