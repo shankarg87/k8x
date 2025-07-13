@@ -218,10 +218,23 @@ func (se *ShellExecutor) containsWriteOperations(command string) bool {
 func (se *ShellExecutor) containsHelmWriteOperations(command string) bool {
 	writeOps := []string{
 		"install", "upgrade", "uninstall", "delete", "create", "rollback",
-		"repo", "plugin", "push", "pull", "registry",
+		"plugin", "push", "pull", "registry",
 	}
+	repoWriteOps := []string{"add", "remove"}
 
 	lowerCmd := strings.ToLower(command)
+
+	// Handle "helm repo" commands separately
+	if strings.HasPrefix(lowerCmd, "helm repo") {
+		for _, op := range repoWriteOps {
+			if strings.Contains(lowerCmd, " repo "+op+" ") || strings.HasSuffix(lowerCmd, " repo "+op) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Check for other write operations
 	for _, op := range writeOps {
 		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
 			return true
