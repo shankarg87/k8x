@@ -88,14 +88,28 @@ Example:
 		provCreds.Anthropic.APIKey = creds.Anthropic.APIKey
 		provCreds.Google.ApplicationCredentials = creds.Google.ApplicationCredentials
 
-		unifiedProvider, err := providers.NewUnifiedProvider(provCreds)
+		// Get provider configuration
+		var providerConfig config.ProviderConfig
+		if provCfg, exists := cfg.LLM.Providers[creds.SelectedProvider]; exists {
+			providerConfig = provCfg
+		}
+
+		// Initialize provider with configuration support
+		unifiedProvider, err := providers.NewUnifiedProviderWithConfig(provCreds, providerConfig)
 		if err != nil {
 			return fmt.Errorf("failed to initialize LLM provider: %w", err)
 		}
 		fmt.Printf("🤖 Using LLM provider: %s\n", unifiedProvider.Name())
+		fmt.Printf("📊 Context window: %d tokens\n", unifiedProvider.GetContextLength())
 
 		// Initialize tool manager for shell execution
 		toolManager := llm.NewToolManager(".")
+		
+		// Initialize summarizer for handling context window limits with config
+		summarizer := llm.NewSummarizer(llm.SummarizerConfig{
+			SummarizeAtPercent: cfg.Settings.Summarizer.SummarizeAtPercent,
+			KeepConversations:  cfg.Settings.Summarizer.KeepConversations,
+		})
 
 		// Set confirmation mode
 		toolManager.SetConfirmationMode(confirm)
@@ -140,11 +154,18 @@ Guidelines:
 			stepCount++
 			fmt.Println(strings.Repeat("=", 40))
 			fmt.Printf("📋 Step %d: Consulting LLM...\n", stepCount)
+			
 
-			// Get response from LLM with tools
-			response, err := unifiedProvider.ChatWithTools(context.Background(), messages, tools)
+			// Get response from LLM with tools (with auto-summarization on context window errors)
+			response, messages, err := chatWithToolsAndSummarization(context.Background(), unifiedProvider, summarizer, messages, tools)
 			if err != nil {
 				return fmt.Errorf("failed to get LLM response: %w", err)
+			}
+			
+			// Display token usage after the call if available
+			if response.Usage != nil {
+				fmt.Printf("📈 LLM usage: %d prompt + %d completion = %d total tokens\n",
+					response.Usage.PromptTokens, response.Usage.CompletionTokens, response.Usage.TotalTokens)
 			}
 
 			fmt.Printf("💭 LLM Response:\n%s\n", response.Content)
@@ -155,50 +176,9 @@ Guidelines:
 				Content: response.Content,
 			}
 
-			// Handle tool calls if present
 			if len(response.ToolCalls) > 0 {
 				assistantMsg.ToolCalls = response.ToolCalls
-				messages = append(messages, assistantMsg)
-
-				// Execute tool calls
-				for _, toolCall := range response.ToolCalls {
-					fmt.Printf("\n🔧 Executing tool: %s\n", toolCall.Function.Name)
-					fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
-
-					// Execute the tool
-					result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
-					if err != nil {
-						result = fmt.Sprintf("Error: %v", err)
-						fmt.Printf("❌ Tool execution failed: %v\n", err)
-					} else {
-						fmt.Printf("✅ Tool execution successful\n")
-					}
-
-					fmt.Printf("📄 Output:\n%s\n", result)
-
-					// Add tool result to conversation
-					messages = append(messages, llm.Message{
-						Role:       "tool",
-						Content:    result,
-						ToolCallID: toolCall.ID,
-					})
-
-					// Record the step in history
-					step := history.Step{
-						Description: fmt.Sprintf("Executed: %s", toolCall.Function.Name),
-						Command:     toolCall.Function.Arguments,
-						Output:      result,
-						Type:        "command",
-					}
-
-					if err := manager.AddStep(entry, step); err != nil {
-						return fmt.Errorf("failed to add step to history: %w", err)
-					}
-				}
 			} else {
-				// No tool calls, just add the assistant message
-				messages = append(messages, assistantMsg)
-
 				// Add LLM response to history as a step
 				step := history.Step{
 					Description: fmt.Sprintf("LLM Planning Step %d", stepCount),
@@ -206,7 +186,40 @@ Guidelines:
 					Output:      response.Content,
 					Type:        "step",
 				}
+				if err := manager.AddStep(entry, step); err != nil {
+					return fmt.Errorf("failed to add step to history: %w", err)
+				}
+				
+			}
+			messages = append(messages, assistantMsg)
+			// Execute tool calls
+			for _, toolCall := range response.ToolCalls {
+				fmt.Printf("\n🔧 Executing tool: %s\n", toolCall.Function.Name)
+				fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
+				// Execute the tool
+				result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
+				if err != nil {
+					result = fmt.Sprintf("Error: %v", err)
+					fmt.Printf("❌ Tool execution failed: %v\n", err)
+				} else {
+					fmt.Printf("✅ Tool execution successful\n")
+				}
 
+				fmt.Printf("📄 Output:\n%s\n", result)
+
+				// Add tool result to conversation
+				messages = append(messages, llm.Message{
+					Role:       "tool",
+					Content:    result,
+					ToolCallID: toolCall.ID,
+				})
+				// Record the step in history
+				step := history.Step{
+					Description: fmt.Sprintf("Executed: %s", toolCall.Function.Name),
+					Command:     toolCall.Function.Arguments,
+					Output:      result,
+					Type:        "command",
+				}
 				if err := manager.AddStep(entry, step); err != nil {
 					return fmt.Errorf("failed to add step to history: %w", err)
 				}
@@ -248,4 +261,62 @@ func init() {
 
 	// Add confirm flag to get explicit permission before tool execution
 	runCmd.Flags().BoolP("confirm", "c", false, "Ask for confirmation before executing each tool")
+}
+
+// chatWithToolsAndSummarization attempts to chat with tools, automatically
+// summarizes the conversation if the context usage exceeds the configured threshold,
+// and handles context window errors as a fallback.
+// Returns the response and the potentially updated messages slice.
+// Note: The caller is responsible for adding the response to the conversation history.
+func chatWithToolsAndSummarization(ctx context.Context, provider *providers.UnifiedProvider, summarizer *llm.Summarizer, messages []llm.Message, tools []llm.Tool) (*llm.Response, []llm.Message, error) {
+	// Check if we should summarize based on percentage threshold
+	if summarizer.ShouldSummarize(provider, messages) {
+		fmt.Printf("⚠️  Context usage at %.0f%%. Auto-summarizing conversation...\n", 
+			float64(provider.EstimateTokens(messages)*100)/float64(provider.GetContextLength()))
+		
+		summarizedMessages, summarizeErr := summarizer.SummarizeConversation(ctx, provider, messages)
+		if summarizeErr != nil {
+			fmt.Printf("❌ Failed to summarize conversation: %v\n", summarizeErr)
+			// Continue with original messages despite summarization failure
+		} else {
+			fmt.Printf("✅ Successfully summarized conversation from %d to %d messages\n", 
+				len(messages), len(summarizedMessages))
+			messages = summarizedMessages
+		}
+	}
+	
+	// First attempt: try the regular chat with tools
+	response, err := provider.ChatWithTools(ctx, messages, tools)
+	
+	// If no context window error, return the response with messages
+	if err == nil || !llm.IsContextWindowError(err) {
+		return response, messages, err
+	}
+	
+	// Context window exceeded despite summarization - attempt emergency summarization
+	fmt.Println("⚠️  Context window still exceeded after summarization. Emergency summary...")
+	
+	// Use more aggressive summarization for emergency cases
+	emergencySummarizer := llm.NewSummarizer(llm.SummarizerConfig{
+		SummarizeAtPercent: 50, // Not used for this call
+		KeepConversations:  1,  // Keep only 1 conversation for emergency
+	})
+	
+	summarizedMessages, summarizeErr := emergencySummarizer.SummarizeConversation(ctx, provider, messages)
+	if summarizeErr != nil {
+		// If emergency summarization fails, return the original error
+		fmt.Printf("❌ Emergency summarization failed: %v\n", summarizeErr)
+		return nil, messages, fmt.Errorf("context window exceeded and emergency summarization failed: %w", err)
+	}
+	
+	fmt.Printf("✅ Emergency summary: conversation reduced from %d to %d messages\n", 
+		len(messages), len(summarizedMessages))
+	
+	// Retry with the emergency summarized conversation
+	response, retryErr := provider.ChatWithTools(ctx, summarizedMessages, tools)
+	if retryErr != nil {
+		return nil, summarizedMessages, fmt.Errorf("failed after emergency summarization: %w", retryErr)
+	}
+	
+	return response, summarizedMessages, nil
 }

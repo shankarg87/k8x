@@ -9,6 +9,7 @@ llm:
     openai:
       model: "gpt-4"
       base_url: ""  # Leave empty for default
+      context_length: 8192  # Override default context window size
       options:
         temperature: "0.1"
         max_tokens: "2000"
@@ -16,6 +17,7 @@ llm:
     anthropic:
       model: "claude-3-5-sonnet-20241022"
       base_url: ""  # Leave empty for default
+      context_length: 200000  # Override default context window size
       options:
         temperature: "0.1"
         max_tokens: "2000"
@@ -35,3 +37,10 @@ settings:
   history_enabled: true
   # Enable undo functionality (future feature)
   undo_enabled: false
+  
+  # Conversation summarization settings
+  summarizer:
+    # Percentage of context length at which to trigger summarization
+    summarize_at_percent: 70
+    # Number of recent conversation exchanges to keep intact before summarizing
+    keep_conversations: 1

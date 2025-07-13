@@ -14,8 +14,9 @@ import (
 
 // OpenAIProvider implements the llm.Provider interface for OpenAI
 type OpenAIProvider struct {
-	client openai.Client
-	model  string
+	client        openai.Client
+	model         string
+	contextLength int
 }
 
 // NewOpenAIProvider creates a new OpenAI provider
@@ -34,7 +35,36 @@ func NewOpenAIProvider(apiKey, baseURL, model string) *OpenAIProvider {
 	}
 
 	client := openai.NewClient(opts...)
-	return &OpenAIProvider{client: client, model: model}
+	
+	// Get default context length for the model
+	contextLength := getDefaultContextLengthForOpenAI(model)
+	
+	return &OpenAIProvider{
+		client:        client,
+		model:         model,
+		contextLength: contextLength,
+	}
+}
+
+// getDefaultContextLengthForOpenAI returns default context lengths for OpenAI models
+func getDefaultContextLengthForOpenAI(model string) int {
+	defaults := map[string]int{
+		"gpt-4":           8192,
+		"gpt-4-turbo":     128000,
+		"gpt-4o":          128000,
+		"gpt-4o-mini":     128000,
+		"o1":              200000,
+		"o1-mini":         128000,
+		"o3-mini":         128000,
+		"gpt-3.5-turbo":   16385,
+	}
+	
+	if contextLength, exists := defaults[model]; exists {
+		return contextLength
+	}
+	
+	// Default fallback
+	return 8192
 }
 
 // Name returns the provider name
@@ -256,4 +286,38 @@ func (p *OpenAIProvider) ChatWithTools(ctx context.Context, messages []llm.Messa
 // Stream returns an error until streaming is implemented
 func (p *OpenAIProvider) Stream(ctx context.Context, messages []llm.Message) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("streaming not yet implemented for OpenAI provider")
+}
+
+// EstimateTokens provides a rough estimation of token count for messages
+func (p *OpenAIProvider) EstimateTokens(messages []llm.Message) int {
+	totalTokens := 0
+	
+	for _, msg := range messages {
+		// Rough estimation: 1 token ≈ 4 characters for English text
+		// Add some overhead for message structure
+		contentTokens := len(msg.Content) / 4
+		totalTokens += contentTokens + 10 // +10 for message overhead
+		
+		// Add tokens for tool calls if present
+		if len(msg.ToolCalls) > 0 {
+			for _, tc := range msg.ToolCalls {
+				totalTokens += len(tc.Function.Name)/4 + len(tc.Function.Arguments)/4 + 20
+			}
+		}
+	}
+	
+	// Add some overhead for the overall request structure
+	return totalTokens + 50
+}
+
+// GetContextLength returns the context window size for this provider
+func (p *OpenAIProvider) GetContextLength() int {
+	return p.contextLength
+}
+
+// SetContextLength allows overriding the context length from configuration
+func (p *OpenAIProvider) SetContextLength(length int) {
+	if length > 0 {
+		p.contextLength = length
+	}
 }
