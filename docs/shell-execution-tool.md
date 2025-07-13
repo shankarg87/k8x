@@ -19,21 +19,30 @@ k8x now includes a **shell execution tool** that allows the LLM agent to execute
 The tool allows execution of these safe commands:
 
 **Core Commands:**
+
 - `kubectl` (read-only operations only)
+- `helm` (read-only operations only)
+- `kustomize` (read-only operations only)
+- `docker` (read-only operations only)
+- `git` (read-only operations only)
 - `echo`, `cat`, `ls`, `pwd`, `whoami`, `date`, `uname`, `which`
 - `curl`, `ping`, `nslookup`, `dig`, `wget`, `telnet`, `nc` (for connectivity checks)
 
 **Text Processing:**
+
 - `head`, `tail`, `grep`, `awk`, `sed`, `sort`, `uniq`, `wc`, `find`
 
 **System Information:**
+
 - `ps`, `netstat`, `ss`, `lsof`, `df`, `du`, `free`, `uptime`, `id`, `env`, `printenv`
 - `hostname`, `mount`, `lsblk`, `ip`, `ifconfig`, `route`, `arp`, `traceroute`
 
 **Data Processing:**
+
 - `jq`, `yq`, `base64`, `xxd`, `file`, `stat`
 
 **Shell Utilities:**
+
 - `history`, `alias`
 
 #### Kubectl Safety Checks
@@ -48,6 +57,50 @@ Additional safety for kubectl commands - these operations are blocked:
 - Rollouts: `rollout`
 - Node management: `drain`, `cordon`, `uncordon`, `taint`
 - Interactive operations: `exec`, `port-forward`, `proxy`, `attach`, `cp`
+
+#### Helm Safety Checks
+
+Additional safety for helm commands - these operations are blocked:
+
+- Installation/Deployment: `install`, `upgrade`, `uninstall`, `delete`, `create`, `rollback`
+- Repository management: `repo` (add, remove, update)
+- Plugin management: `plugin`
+- Registry operations: `push`, `pull`, `registry`
+
+Only read-only operations like `list`, `status`, `get`, `history`, `version` are allowed.
+
+#### Docker Safety Checks
+
+Additional safety for docker commands - only these read-only operations are allowed:
+
+- `docker version` - Show Docker version information
+- `docker info` - Display system-wide information
+- `docker ps` - List running containers
+- `docker images` - List images
+
+All other Docker operations including `run`, `build`, `push`, `pull`, etc. are blocked.
+
+#### Git Safety Checks
+
+Additional safety for git commands - only these read-only operations are allowed:
+
+- `git version` - Show Git version
+- `git status` - Show working tree status
+- `git log` - Show commit logs
+- `git show` - Show object information
+- `git diff` - Show changes between commits
+- `git blame` - Show what revision and author last modified each line
+
+All other Git operations including `add`, `commit`, `push`, `pull`, `merge`, etc. are blocked.
+
+#### Kustomize Safety Checks
+
+Additional safety for kustomize commands - only these read-only operations are allowed:
+
+- `kustomize version` - Show Kustomize version
+- `kustomize build` - Build and output the configured resources (read-only)
+
+All other Kustomize operations including `create`, `edit`, `fix` are blocked.
 
 #### Suggestions for additional security
 
@@ -139,7 +192,6 @@ roleRef:
 
 Next, generate a kubeconfig referencing this ServiceAccount (e.g., export KUBECONFIG=~/.kube/k8x.conf). Pass this kubeconfig file and context as configuration parameters to k8x.
 
-
 #### Command Timeout
 
 - All commands have a 30-second timeout to prevent hanging
@@ -154,8 +206,18 @@ Next, generate a kubeconfig referencing this ServiceAccount (e.g., export KUBECO
 
 ### 2. Execution Flow
 
-```
-User Goal → LLM Planning → Tool Call → Shell Execution → Result → Next Step
+```text
+User Goal
+  ↓
+LLM Planning
+  ↓
+Tool Call (`execute_shell_command`)
+  ↓
+Shell Execution (with safety checks)
+  ↓
+Result (output/error)
+  ↓
+LLM Next Step (repeat or finish)
 ```
 
 ### 3. Example Workflow

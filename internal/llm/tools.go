@@ -70,6 +70,10 @@ func NewShellExecutor(workDir string) *ShellExecutor {
 	// Define allowed kubectl and other safe read-only commands
 	allowedCommands := []string{
 		"kubectl",
+		"helm",      // for Helm releases and chart information
+		"kustomize", // for Kustomize version and operations
+		"docker",    // for Docker version and info (read-only)
+		"git",       // for Git version and repository info (read-only)
 		"echo",
 		"cat",
 		"ls",
@@ -138,9 +142,37 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 		}
 	}
 
+	// Additional safety checks for helm
+	if baseCmd == "helm" {
+		if se.containsHelmWriteOperations(command) {
+			return "", fmt.Errorf("helm write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
+	// Additional safety checks for docker
+	if baseCmd == "docker" {
+		if se.containsDockerWriteOperations(command) {
+			return "", fmt.Errorf("docker write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
+	// Additional safety checks for git
+	if baseCmd == "git" {
+		if se.containsGitWriteOperations(command) {
+			return "", fmt.Errorf("git write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
+	// Additional safety checks for kustomize
+	if baseCmd == "kustomize" {
+		if se.containsKustomizeWriteOperations(command) {
+			return "", fmt.Errorf("kustomize write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
 	// Set up environment for kubectl if kubeconfig path is specified
 	env := os.Environ()
-	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && baseCmd == "kubectl" {
+	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && (baseCmd == "kubectl" || baseCmd == "helm") {
 		env = append(env, fmt.Sprintf("KUBECONFIG=%s", se.k8sConfig.KubeConfigPath))
 	}
 
@@ -174,6 +206,96 @@ func (se *ShellExecutor) containsWriteOperations(command string) bool {
 	}
 
 	lowerCmd := strings.ToLower(command)
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsHelmWriteOperations checks if a helm command contains write operations
+func (se *ShellExecutor) containsHelmWriteOperations(command string) bool {
+	writeOps := []string{
+		"install", "upgrade", "uninstall", "delete", "create", "rollback",
+		"repo", "plugin", "push", "pull", "registry",
+	}
+
+	lowerCmd := strings.ToLower(command)
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsDockerWriteOperations checks if a docker command contains write operations
+func (se *ShellExecutor) containsDockerWriteOperations(command string) bool {
+	writeOps := []string{
+		"run", "start", "stop", "restart", "kill", "rm", "rmi", "build",
+		"create", "exec", "cp", "commit", "push", "pull", "save", "load",
+		"import", "export", "tag", "untag", "pause", "unpause", "rename",
+		"update", "wait", "attach", "login", "logout", "network", "volume",
+		"system", "config", "secret", "service", "stack", "swarm", "node",
+	}
+
+	lowerCmd := strings.ToLower(command)
+	// Allow only version, info, and ps commands
+	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " info") ||
+		strings.Contains(lowerCmd, " ps") || strings.Contains(lowerCmd, " images") ||
+		strings.Contains(lowerCmd, " --version") {
+		return false
+	}
+
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsGitWriteOperations checks if a git command contains write operations
+func (se *ShellExecutor) containsGitWriteOperations(command string) bool {
+	writeOps := []string{
+		"add", "commit", "push", "pull", "merge", "rebase", "reset", "rm",
+		"mv", "checkout", "branch", "tag", "clone", "init", "remote",
+		"fetch", "stash", "apply", "pop", "drop", "clean", "gc", "prune",
+		"submodule", "config", "notes", "worktree", "bisect", "cherry-pick",
+		"revert", "archive", "bundle", "filter-branch", "replace", "reflog",
+	}
+
+	lowerCmd := strings.ToLower(command)
+	// Allow only version, status, log, show, diff, and blame commands
+	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " status") ||
+		strings.Contains(lowerCmd, " log") || strings.Contains(lowerCmd, " show") ||
+		strings.Contains(lowerCmd, " diff") || strings.Contains(lowerCmd, " blame") ||
+		strings.Contains(lowerCmd, " --version") {
+		return false
+	}
+
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsKustomizeWriteOperations checks if a kustomize command contains write operations
+func (se *ShellExecutor) containsKustomizeWriteOperations(command string) bool {
+	writeOps := []string{
+		"create", "edit", "fix", "localize", "cfg",
+	}
+
+	lowerCmd := strings.ToLower(command)
+	// Allow only version and build commands (build is read-only, just outputs YAML)
+	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " build") ||
+		strings.Contains(lowerCmd, " --version") {
+		return false
+	}
+
 	for _, op := range writeOps {
 		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
 			return true
