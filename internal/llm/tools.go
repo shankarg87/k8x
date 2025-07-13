@@ -172,7 +172,7 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 
 	// Set up environment for kubectl if kubeconfig path is specified
 	env := os.Environ()
-	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && (baseCmd == "kubectl" || baseCmd == "helm") {
+	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && (baseCmd == "kubectl" || baseCmd == "helm" || baseCmd == "kustomize") {
 		env = append(env, fmt.Sprintf("KUBECONFIG=%s", se.k8sConfig.KubeConfigPath))
 	}
 
