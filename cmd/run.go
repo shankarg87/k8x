@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -264,7 +265,11 @@ Also supported:
 		if historyPath != "" {
 			file, err := os.Open(historyPath)
 			if err == nil {
-				defer file.Close()
+				defer func() {
+					if err := file.Close(); err != nil {
+						fmt.Printf("⚠️  Error closing shell history file: %v\n", err)
+					}
+				}()
 				scanner := bufio.NewScanner(file)
 				var lines []string
 				for scanner.Scan() {
@@ -298,6 +303,26 @@ Also supported:
 			} else {
 				fmt.Printf("⚠️  Could not open shell history: %v\n", err)
 			}
+		}
+
+		// Ensure context values have (unavailable) as default if empty
+		if strings.TrimSpace(kubectlVersion) == "" {
+			kubectlVersion = "(unavailable)"
+		}
+		if strings.TrimSpace(clusterVersion) == "" {
+			clusterVersion = "(unavailable)"
+		}
+		if strings.TrimSpace(namespaces) == "" {
+			namespaces = "(unavailable)"
+		}
+		if strings.TrimSpace(toolsCheck) == "" {
+			toolsCheck = "(unavailable)"
+		}
+		if strings.TrimSpace(helmReleases) == "" {
+			helmReleases = "(unavailable)"
+		}
+		if strings.TrimSpace(recentExamples) == "" {
+			recentExamples = "(unavailable)"
 		}
 
 		contextInfo := fmt.Sprintf(`
