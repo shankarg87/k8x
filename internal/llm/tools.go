@@ -72,8 +72,6 @@ func NewShellExecutor(workDir string) *ShellExecutor {
 		"kubectl",
 		"helm",      // for Helm releases and chart information
 		"kustomize", // for Kustomize version and operations
-		"docker",    // for Docker version and info (read-only)
-		"git",       // for Git version and repository info (read-only)
 		"echo",
 		"cat",
 		"ls",
@@ -149,20 +147,6 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 		}
 	}
 
-	// Additional safety checks for docker
-	if baseCmd == "docker" {
-		if se.containsDockerWriteOperations(command) {
-			return "", fmt.Errorf("docker write operations are not allowed in read-only mode. Command: %s", command)
-		}
-	}
-
-	// Additional safety checks for git
-	if baseCmd == "git" {
-		if se.containsGitWriteOperations(command) {
-			return "", fmt.Errorf("git write operations are not allowed in read-only mode. Command: %s", command)
-		}
-	}
-
 	// Additional safety checks for kustomize
 	if baseCmd == "kustomize" {
 		if se.containsKustomizeWriteOperations(command) {
@@ -235,59 +219,6 @@ func (se *ShellExecutor) containsHelmWriteOperations(command string) bool {
 	}
 
 	// Check for other write operations
-	for _, op := range writeOps {
-		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
-			return true
-		}
-	}
-	return false
-}
-
-// containsDockerWriteOperations checks if a docker command contains write operations
-func (se *ShellExecutor) containsDockerWriteOperations(command string) bool {
-	writeOps := []string{
-		"run", "start", "stop", "restart", "kill", "rm", "rmi", "build",
-		"create", "exec", "cp", "commit", "push", "pull", "save", "load",
-		"import", "export", "tag", "untag", "pause", "unpause", "rename",
-		"update", "wait", "attach", "login", "logout", "network", "volume",
-		"system", "config", "secret", "service", "stack", "swarm", "node",
-	}
-
-	lowerCmd := strings.ToLower(command)
-	// Allow only version, info, and ps commands
-	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " info") ||
-		strings.Contains(lowerCmd, " ps") || strings.Contains(lowerCmd, " images") ||
-		strings.Contains(lowerCmd, " --version") {
-		return false
-	}
-
-	for _, op := range writeOps {
-		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
-			return true
-		}
-	}
-	return false
-}
-
-// containsGitWriteOperations checks if a git command contains write operations
-func (se *ShellExecutor) containsGitWriteOperations(command string) bool {
-	writeOps := []string{
-		"add", "commit", "push", "pull", "merge", "rebase", "reset", "rm",
-		"mv", "checkout", "branch", "tag", "clone", "init", "remote",
-		"fetch", "stash", "apply", "pop", "drop", "clean", "gc", "prune",
-		"submodule", "config", "notes", "worktree", "bisect", "cherry-pick",
-		"revert", "archive", "bundle", "filter-branch", "replace", "reflog",
-	}
-
-	lowerCmd := strings.ToLower(command)
-	// Allow only version, status, log, show, diff, and blame commands
-	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " status") ||
-		strings.Contains(lowerCmd, " log") || strings.Contains(lowerCmd, " show") ||
-		strings.Contains(lowerCmd, " diff") || strings.Contains(lowerCmd, " blame") ||
-		strings.Contains(lowerCmd, " --version") {
-		return false
-	}
-
 	for _, op := range writeOps {
 		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
 			return true
