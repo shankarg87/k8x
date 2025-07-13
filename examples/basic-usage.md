@@ -79,7 +79,7 @@ k8x interactive
 
 In interactive mode, you can have a conversation about your cluster:
 
-```
+```plaintext
 > What pods are running in the kube-system namespace?
 > Can you restart the coredns deployment?
 > Show me the events for the last 10 minutes

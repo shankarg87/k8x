@@ -66,6 +66,12 @@ Example:
 			return errors.New("k8x is not configured.\nHint: Please run `k8x configure`")
 		}
 
+		// Load configuration for Kubernetes settings
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			return fmt.Errorf("failed to load configuration: %w", err)
+		}
+
 		// Load credentials for LLM
 		creds, err := config.LoadCredentials()
 		if err != nil {
@@ -448,7 +454,7 @@ Guidelines:
 
 		// Final summary step: ask LLM to summarize session
 		summaryPrompt := `To tell the user what was done in this session on shell console,
-summarize the steps taken as a simple checklist.
+summarize each step taken as a simple checklist.
 e.g. "Step 02: ✅ All pods in the production namespace listed." (use cross emoji for failed tool calls)
 The last line should be a single sentence saying what was done. Followed by **DONE**.
 - be clear and concise to summarize the user's original question/command.`

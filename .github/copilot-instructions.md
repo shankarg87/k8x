@@ -1,3 +1,5 @@
+# Copilot Coding Instructions
+
 Use the Cobra framework for CLI commands with descriptive names and POSIX-compliant flag patterns.
 
 Write Go code with explicit error handling using wrapped errors like `fmt.Errorf("operation failed: %w", err)`.
@@ -30,7 +32,7 @@ Structure documentation in `docs/` and working examples in `examples/` with real
 
 Follow this exact project structure:
 
-```
+```text
 .
 ├── build
 │   └── k8x                          # Compiled binary output
