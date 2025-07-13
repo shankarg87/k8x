@@ -3,9 +3,10 @@
 # Build variables
 BINARY_NAME=k8x
 BUILD_DIR=build
-VERSION?=$(shell git describe --tags --always --dirty)
-COMMIT?=$(shell git rev-parse HEAD)
-DATE?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+# VERSION uses git tag if present, else commit hash (nightly/dev builds will show 'nightly' from code)
+VERSION?=$(shell git describe --tags --abbrev=0 2>/dev/null || echo nightly)
+COMMIT?=$(shell git rev-parse --short HEAD)
+DATE?=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 # Go variables
 GOBASE=$(shell pwd)
@@ -13,7 +14,7 @@ GOBIN=$(GOBASE)/$(BUILD_DIR)
 GOFILES=$(wildcard *.go)
 
 # Build flags
-LDFLAGS=-ldflags "-s -w -X github.com/shankgan/k8x/cmd.version=$(VERSION) -X github.com/shankgan/k8x/cmd.commit=$(COMMIT) -X github.com/shankgan/k8x/cmd.date=$(DATE)"
+LDFLAGS=-ldflags "-s -w -X k8x/cmd.version=$(VERSION) -X k8x/cmd.commit=$(COMMIT) -X k8x/cmd.date=$(DATE)"
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'

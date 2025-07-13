@@ -1,5 +1,7 @@
 # k8x Shell Execution Tool
 
+> **Note:** The preferred way to invoke k8x is `k8x -c "<goal>"`. You can also use `k8x run "<goal>"` or `k8x command "<goal>"` as alternatives.
+
 ## Overview
 
 k8x now includes a **shell execution tool** that allows the LLM agent to execute safe, read-only shell commands automatically. This feature bridges the gap between LLM planning and actual command execution, making k8x a truly autonomous Kubernetes workflow assistant.

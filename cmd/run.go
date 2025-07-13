@@ -18,17 +18,21 @@ import (
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run \"<goal>\"",
-	Short: "Run a new k8x session with a goal",
+	Use:     "run \"<goal>\"",
+	Aliases: []string{"command", "-c"},
+	Short:   "Run a new k8x session with a goal (preferred: k8x -c)",
 	Long: `Start a new k8x session with a natural language goal.
 This will create a new .k8x history file and begin an LLM-driven
 planning and execution loop.
 
-Example:
+Preferred usage:
+  k8x -c "Diagnose why my nginx pod is failing"
+
+Also supported:
   k8x run "Diagnose why my nginx pod is failing"
-  k8x run "List all pods in the production namespace"
-  k8x run "Check resource usage across all nodes"
-  k8x run --confirm "Diagnose why my nginx pod is failing"`,
+  k8x command "Diagnose why my nginx pod is failing"
+  k8x -c "Diagnose why my nginx pod is failing" --confirm
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		goal := args[0]
 		if strings.TrimSpace(goal) == "" {
@@ -481,6 +485,6 @@ The last line should be a single sentence saying what was done. Followed by **DO
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	// Add confirm flag to get explicit permission before tool execution
-	runCmd.Flags().BoolP("confirm", "c", false, "Ask for confirmation before executing each tool")
+	// Add confirm flag with alias a
+	runCmd.Flags().BoolP("confirm", "a", false, "Ask for confirmation before executing each tool")
 }
