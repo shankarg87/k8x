@@ -1,7 +1,9 @@
 name: Test Suite
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   e2e-tests:
