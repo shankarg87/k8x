@@ -31,7 +31,7 @@ make build
 ./build/k8x configure
 
 # 6. Test with a simple command
-./build/k8x run "are all pods running?"
+./build/k8x -c "are all pods running?"
 ```
 
 ### Development Commands
@@ -94,7 +94,7 @@ k8x/
 │   ├── configure.go            # `k8x configure` command
 │   ├── history.go              # `k8x history` command
 │   ├── root.go                 # Root cobra command and global flags
-│   ├── run.go                  # `k8x run` command (main functionality)
+│   ├── run.go                  # `k8x -c` command (main functionality, also aliased as 'run' and 'command')
 │   └── version.go              # `k8x version` command
 ├── internal/                    # Private packages
 │   ├── config/                 # Configuration management
@@ -357,10 +357,10 @@ k8x configure
 k8x help
 
 # List all pods with AI assistance
-k8x run "show me all pods in the default namespace"
+k8x -c "show me all pods in the default namespace"
 
 # Troubleshoot a deployment
-k8x run "diagnose deployment my-app"
+k8x -c "diagnose deployment my-app"
 
 # Interactive mode (coming soon)
 k8x interactive
@@ -383,7 +383,8 @@ k8x undo <operation-id>
 
 ## Commands
 
-- `k8x run` - Execute goal-oriented AI sessions with kubectl
+- `k8x -c` - Execute goal-oriented AI sessions with kubectl
+- `k8x -c --ask` or `k8x -c -a` - Execute with confirmation before each tool
 - `k8x configure` - Manage configuration and credentials
 - `k8x history` - View and manage command history
 - `k8x version` - Show version information

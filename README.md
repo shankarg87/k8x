@@ -39,33 +39,36 @@ docker run ghcr.io/shankgan/k8x:latest
 1. **Initialize configuration:**
 
    ```bash
-   k8x configure
+   k8x config init
    ```
 
 2. **Add your LLM API key to ~/.k8x/credentials:**
 
-   ```yaml
-   openai:
-     api_key: "your-api-key"
+   ```bash
+   vim ~/.k8x/credentials
    ```
 
 3. **Start using k8x:**
 
    ```bash
-   k8x run "List all failing pods and diagnose the issues"
+   k8x -c "are all pods running?"
+   # Or
+   k8x run "are all pods running?"
+   # Or
+   k8x command "are all pods running?"
    ```
 
 ## Usage Examples
 
 ```bash
 # Diagnose pod issues
-k8x run "Find all pods that are not ready and explain why"
+k8x -c "Find all pods that are not ready and explain why"
 
 # Resource analysis
-k8x run "Check resource usage across all namespaces"
+k8x -c "Check resource usage across all namespaces"
 
 # Service troubleshooting
-k8x run "Diagnose why my service endpoints are empty"
+k8x -c "Diagnose why my service endpoints are empty"
 
 # View command history
 k8x history list
@@ -91,14 +94,14 @@ make deps && make build
 
 # Configure and test
 ./build/k8x configure
-./build/k8x run "are all pods running?"
+./build/k8x -c "are all pods running?"
 ```
 
 ### Project Structure
 
 ```text
 k8x/
-├── cmd/                 # CLI commands (Cobra)
+├── cmd/                 # CLI commands (Cobra, 'run', 'command', '-c' all supported)
 ├── internal/
 │   ├── config/         # Configuration management
 │   ├── llm/            # LLM provider interfaces
