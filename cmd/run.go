@@ -262,32 +262,41 @@ Also supported:
 		cmds := []string{}
 		cmdSet := make(map[string]struct{})
 		if historyPath != "" {
-			data, err := os.ReadFile(historyPath)
+			file, err := os.Open(historyPath)
 			if err == nil {
-				lines := strings.Split(string(data), "\n")
-				for i := len(lines) - 1; i >= 0 && len(cmds) < 50; i-- {
-					line := lines[i]
-					if line == "" || strings.HasPrefix(line, ":") {
-						continue
-					}
-					// Only consider commands relevant to CLI usage
-					if strings.HasPrefix(line, "k8x") || strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "docker") || strings.HasPrefix(line, "git") {
-						if _, exists := cmdSet[line]; !exists {
-							cmdSet[line] = struct{}{}
-							cmds = append(cmds, line)
+				defer file.Close()
+				scanner := bufio.NewScanner(file)
+				var lines []string
+				for scanner.Scan() {
+					lines = append(lines, scanner.Text())
+				}
+				if err := scanner.Err(); err == nil {
+					for i := len(lines) - 1; i >= 0 && len(cmds) < 50; i-- {
+						line := lines[i]
+						if line == "" || strings.HasPrefix(line, ":") {
+							continue
+						}
+						// Only consider commands relevant to CLI usage
+						if strings.HasPrefix(line, "k8x") || strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "docker") || strings.HasPrefix(line, "git") {
+							if _, exists := cmdSet[line]; !exists {
+								cmdSet[line] = struct{}{}
+								cmds = append(cmds, line)
+							}
 						}
 					}
-				}
-				// Take the most recent 20 unique commands
-				if len(cmds) > 20 {
-					cmds = cmds[:20]
-				}
-				if len(cmds) > 0 {
-					recentExamples = "Recent Examples:\n" + strings.Join(cmds, "\n")
-					fmt.Printf("📝 Found %d distinct recent CLI commands in shell history.\n", len(cmds))
+					// Take the most recent 20 unique commands
+					if len(cmds) > 20 {
+						cmds = cmds[:20]
+					}
+					if len(cmds) > 0 {
+						recentExamples = "Recent Examples:\n" + strings.Join(cmds, "\n")
+						fmt.Printf("📝 Found %d distinct recent CLI commands in shell history.\n", len(cmds))
+					}
+				} else {
+					fmt.Printf("⚠️  Could not read shell history: %v\n", err)
 				}
 			} else {
-				fmt.Printf("⚠️  Could not read shell history: %v\n", err)
+				fmt.Printf("⚠️  Could not open shell history: %v\n", err)
 			}
 		}
 
