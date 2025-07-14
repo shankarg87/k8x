@@ -1,0 +1,30 @@
+version: 2
+
+run:
+  timeout: 5m
+  go: "1.24.4"
+
+linters:
+  enable:
+    # Default enabled linters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Additional useful linters (less noisy)
+    - misspell
+
+linters-settings: {}
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gosec
+        - revive
+    # Exclude test files from most linters since they often have different patterns
+    - path: test/
+      linters:
+        - gosec
