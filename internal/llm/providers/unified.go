@@ -10,7 +10,7 @@ import (
 
 // Credentials holds API credentials and selected provider configuration.
 type Credentials struct {
-	// SelectedProvider indicates which LLM provider to use ("openai" or "anthropic").
+	// SelectedProvider indicates which LLM provider to use ("openai", "anthropic", or "google").
 	SelectedProvider string `yaml:"selected_provider,omitempty"`
 
 	OpenAI struct {
@@ -22,7 +22,7 @@ type Credentials struct {
 	} `yaml:"anthropic"`
 
 	Google struct {
-		// Reserved for future Google LLM support
+		APIKey                 string `yaml:"api_key"`
 		ApplicationCredentials string `yaml:"application_credentials"`
 	} `yaml:"google"`
 }
@@ -36,11 +36,18 @@ type UnifiedProvider struct {
 // It returns an error if the provider is unsupported or not configured.
 func NewUnifiedProvider(creds Credentials) (*UnifiedProvider, error) {
 	var provider llm.Provider
+	var err error
+
 	switch creds.SelectedProvider {
 	case "openai":
 		provider = NewOpenAIProvider(creds.OpenAI.APIKey, "", "")
 	case "anthropic":
 		provider = NewAnthropicProvider(creds.Anthropic.APIKey, "", "")
+	case "google":
+		provider, err = NewGoogleProvider(creds.Google.APIKey, creds.Google.ApplicationCredentials, "")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Google provider: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", creds.SelectedProvider)
 	}
@@ -89,6 +96,8 @@ func (u *UnifiedProvider) ChatWithTools(ctx context.Context, messages []llm.Mess
 	case *OpenAIProvider:
 		return p.ChatWithTools(ctx, messages, tools)
 	case *AnthropicProvider:
+		return p.ChatWithTools(ctx, messages, tools)
+	case *GoogleProvider:
 		return p.ChatWithTools(ctx, messages, tools)
 	default:
 		// Fallback to regular chat if tools not supported

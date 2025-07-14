@@ -73,6 +73,7 @@ func CreateDefaultCredentialsFile() error {
 	}
 	defaultCreds.OpenAI.APIKey = "your-openai-api-key-here"
 	defaultCreds.Anthropic.APIKey = "your-anthropic-api-key-here"
+	defaultCreds.Google.APIKey = "your-gemini-api-key-here"
 	defaultCreds.Google.ApplicationCredentials = "/path/to/service-account.json"
 
 	// Ensure the directory exists

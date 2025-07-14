@@ -71,7 +71,7 @@ This command will:
 		fmt.Println("\nSelect your preferred LLM provider:")
 		fmt.Println("  1. OpenAI")
 		fmt.Println("  2. Anthropic")
-		fmt.Println("  3. Google Vertex AI")
+		fmt.Println("  3. Google (Gemini API)")
 		fmt.Print("Enter choice [1-3]: ")
 		var providerChoice int
 		_, err = fmt.Scanln(&providerChoice)
@@ -80,17 +80,21 @@ This command will:
 		}
 
 		var provider string
+		var providerLabel string
 		switch providerChoice {
 		case 1:
 			provider = "openai"
+			providerLabel = "OpenAI"
 		case 2:
 			provider = "anthropic"
+			providerLabel = "Anthropic"
 		case 3:
 			provider = "google"
+			providerLabel = "Google (Gemini API)"
 		}
 
 		// Step 2: Ask for API key
-		fmt.Printf("Enter your %s API key: ", provider)
+		fmt.Printf("Enter your %s API key: ", providerLabel)
 		var apiKey string
 		_, err = fmt.Scanln(&apiKey)
 		if err != nil || apiKey == "" {
