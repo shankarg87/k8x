@@ -6,18 +6,17 @@
 
 **Agentic kubectl** - AI-powered Kubernetes operations
 
-k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubectl. It helps you manage Kubernetes resources through natural language commands, provides automated assistance for common operations, and offers intelligent troubleshooting capabilities.
+k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubectl. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
 
 ## Features
 
 - 🤖 **Natural Language Interface**: Ask questions about your cluster in plain English
-- � **Autonomous Execution**: AI agent can execute safe kubectl commands automatically
-- �🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
-- 📚 **Command History**: Automatic tracking of all operations with undo support
-- 🔌 **Multi-LLM Support**: Works with OpenAI, Anthropic Claude, and other LLM providers
-- 🛡️ **Secure by Default**: Read-only mode, command filtering, and local credential storage
-- 🎯 **Context-Aware**: Understands your cluster state and provides relevant suggestions
-- ⚡ **Tool Integration**: Built-in shell execution tool for seamless kubectl operations
+- 🔄 **Autonomous Execution**: AI agent executes safe kubectl commands automatically
+- 🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
+- 📚 **Command History**: Automatic tracking with undo support
+- 🔌 **Multi-LLM Support**: OpenAI, Anthropic Claude, and other providers
+- 🛡️ **Secure by Default**: Read-only mode with command filtering
+- 🎯 **Context-Aware**: Understands cluster state and provides relevant suggestions
 
 ## Quick Start
 
@@ -27,7 +26,7 @@ k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubect
 # Homebrew (recommended)
 brew install shankgan/tap/k8x
 
-# Download binary from releases
+# Download binary
 curl -L https://github.com/shankgan/k8x/releases/latest/download/k8x_Linux_x86_64.tar.gz | tar xz
 sudo mv k8x /usr/local/bin/
 
@@ -37,176 +36,96 @@ docker run ghcr.io/shankgan/k8x:latest
 
 ### Setup
 
-1. Initialize configuration:
+1. **Initialize configuration:**
 
-```bash
-k8x config init
-```
+   ```bash
+   k8x config init
+   ```
 
-1. Configure your LLM provider:
+2. **Add your LLM API key to ~/.k8x/credentials:**
 
-```bash
-# Edit ~/.k8x/credentials and add your API keys
-vim ~/.k8x/credentials
-```
+   ```bash
+   vim ~/.k8x/credentials
+   ```
 
-1. Start using k8x:
+3. **Start using k8x:**
 
-```bash
-# Goal-oriented autonomous execution
-k8x run "Diagnose why my nginx pod is failing"
-k8x run "List all pods and show their resource usage"
-k8x run "Check if any services are not receiving traffic"
-
-# Interactive mode (coming soon)
-k8x interactive
-```
+   ```bash
+   k8x -c "are all pods running?"
+   # Or
+   k8x run "are all pods running?"
+   # Or
+   k8x command "are all pods running?"
+   ```
 
 ## Usage Examples
 
 ```bash
-# Goal-oriented autonomous execution
-k8x run "Find all pods that are not ready and explain why"
-k8x run "Check resource usage across all namespaces"
-k8x run "Diagnose why my service endpoints are empty"
-k8x run "List all failed deployments and their error messages"
+# Diagnose pod issues
+k8x -c "Find all pods that are not ready and explain why"
 
-# View session history
-k8x history
+# Resource analysis
+k8x -c "Check resource usage across all namespaces"
 
-# Future commands (in development)
-k8x ask "Which pods are using the most memory?"
-k8x diagnose deployment my-app
-k8x interactive
+# Service troubleshooting
+k8x -c "Diagnose why my service endpoints are empty"
+
+# View command history
+k8x history list
 ```
 
 ## Documentation
 
-- [Full Documentation](./docs/README.md)
-- [Shell Execution Tool](./docs/shell-execution-tool.md)
-- [Usage Examples](./examples/basic-usage.md)
-- [Configuration Guide](./docs/configuration.md)
-- [Contributing](./CONTRIBUTING.md)
+- 📖 **[Complete Documentation](./docs/README.md)** - Installation, configuration, and usage guide
+- 🔧 **[Shell Execution Tool](./docs/shell-execution-tool.md)** - Security model and command filtering
+- 📚 **[Usage Examples](./examples/basic-usage.md)** - Common use cases and patterns
+- 🧪 **[Testing Guide](./docs/testing.md)** - Unit and E2E testing documentation
 
 ## Development
 
-### Prerequisites
+> **For Developers**: See [Developer Documentation](./docs/README.md#development) for complete setup instructions.
 
-- Go 1.21+
-- kubectl configured with cluster access
-- LLM provider API key (OpenAI, Anthropic, etc.)
-- [pre-commit](https://pre-commit.com/) for code linting and formatting
-
-### Developer Setup & Example Workflow
+### Quick Developer Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/shankgan/k8x.git
-cd k8x
+# Clone and setup
+git clone https://github.com/shankgan/k8x.git && cd k8x
+make deps && make build
 
-# Install dependencies
-make deps
-
-# Pre-commit Related:
-# ----------------------------------------
-brew install pre-commit
-
-# Install pre-commit hooks
-pre-commit install --install-hooks
-
-# Run all pre-commit hooks manually
-pre-commit run --all-files
-# ----------------------------------------
-
-# Build the binary
-make build
-
-# Run initial configuration (interactive)
+# Configure and test
 ./build/k8x configure
-
-# Run a goal-oriented session
-./build/k8x run "are all arcade ai pods running?"
-
-# List session history
-./build/k8x history list
-```
-
-#### Pre-commit Hooks Used
-
-The repository uses the following pre-commit hooks (see `.pre-commit-config.yaml`):
-
-- `golangci-lint` – Go code linting
-- `go-fmt` – Code formatting
-- `go-mod-tidy` – Ensure `go.mod`/`go.sum` are tidy
-- `trailing-whitespace` – Remove trailing whitespace
-- `end-of-file-fixer` – Ensure files end with a newline
-
-To add or update hooks, edit `.pre-commit-config.yaml` and re-run `pre-commit install`.
-
-### Building
-
-```bash
-make build
-```
-
-### Running Tests
-
-```bash
-make test
-```
-
-### Development workflow
-
-```bash
-make dev
+./build/k8x -c "are all pods running?"
 ```
 
 ### Project Structure
 
 ```text
 k8x/
-├── cmd/                 # CLI commands (Cobra)
+├── cmd/                 # CLI commands (Cobra, 'run', 'command', '-c' all supported)
 ├── internal/
 │   ├── config/         # Configuration management
 │   ├── llm/            # LLM provider interfaces
 │   └── history/        # Command history tracking
 ├── docs/               # Documentation
 ├── examples/           # Usage examples
-└── .github/            # CI/CD workflows
+└── test/e2e/           # End-to-end tests
 ```
-
-## Security
-
-Refer to [shell execution doc](docs/shell-execution-tool.md)
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Development
 
 ### Testing
 
-The k8x project has comprehensive test coverage:
-
-- **Unit tests**: Test individual components
-- **End-to-End tests**: Test the full functionality against real Kubernetes clusters using kind
-
-To run unit tests:
-
 ```bash
+# Unit tests
 make test
-```
 
-To run E2E tests (requires kind, kubectl, and Docker):
-
-```bash
-export OPENAI_API_KEY=your-api-key-here
+# E2E tests (requires kind, kubectl, Docker)
+export OPENAI_API_KEY=your-api-key
 make test-e2e
 ```
 
-See [docs/testing.md](docs/testing.md) for more details on our testing approach.
+## Contributing
+
+We welcome contributions! Please see [Developer Documentation](./docs/README.md#development) for guidelines.
+
+## License
+
+Apache License - see [LICENSE](LICENSE) file for details.

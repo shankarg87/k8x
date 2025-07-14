@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"k8x/internal/config"
+	k8xcontext "k8x/internal/context"
 	"k8x/internal/history"
 	"k8x/internal/llm"
 	"k8x/internal/llm/providers"
@@ -17,17 +19,21 @@ import (
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run \"<goal>\"",
-	Short: "Run a new k8x session with a goal",
+	Use:     "run \"<goal>\"",
+	Aliases: []string{"command", "-c"},
+	Short:   "Run a new k8x session with a goal (preferred: k8x -c)",
 	Long: `Start a new k8x session with a natural language goal.
 This will create a new .k8x history file and begin an LLM-driven
 planning and execution loop.
 
-Example:
+Preferred usage:
+  k8x -c "Diagnose why my nginx pod is failing"
+
+Also supported:
   k8x run "Diagnose why my nginx pod is failing"
-  k8x run "List all pods in the production namespace"
-  k8x run "Check resource usage across all nodes"
-  k8x run --confirm "Diagnose why my nginx pod is failing"`,
+  k8x command "Diagnose why my nginx pod is failing"
+  k8x -c "Diagnose why my nginx pod is failing" --confirm
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		goal := args[0]
 		if strings.TrimSpace(goal) == "" {
@@ -65,7 +71,7 @@ Example:
 			return errors.New("k8x is not configured.\nHint: Please run `k8x configure`")
 		}
 
-		// Load application configuration
+		// Load configuration for Kubernetes settings
 		cfg, err := config.LoadConfig()
 		if err != nil {
 			return fmt.Errorf("failed to load configuration: %w", err)
@@ -104,28 +110,45 @@ Example:
 		toolManager.SetKubernetesConfig(&cfg.Kubernetes)
 		tools := toolManager.GetTools()
 
+		// Gather cluster context information before starting
+		fmt.Println("🔍 Gathering cluster information...")
+
+		// Build context info string using new function (prints as it gathers)
+		contextInfo, err := k8xcontext.BuildContextInfoString(toolManager, []string{"~/.zsh_history", "~/.bash_history"})
+		if err != nil {
+			return fmt.Errorf("failed to build context info: %w", err)
+		}
+
 		// Prepare system message to set context for k8x
-		systemPrompt := `You are k8x, a Kubernetes shell-workflow assistant specialized in read-only diagnostics and operations.
+		systemPrompt := fmt.Sprintf(`You are k8x, a Kubernetes shell-workflow assistant specialized in read-only diagnostics and operations.
+
+%s
 
 Your role:
 1. You help users achieve Kubernetes-related goals through step-by-step kubectl commands
-2. For this iteration, you can ONLY perform READ-ONLY operations (get, describe, logs, etc.)
-3. Break down complex goals into logical steps
+2. You can ONLY perform READ-ONLY operations (get, describe, logs, etc.)
+3.a. Break down complex goals into logical steps, but be fast and efficient.
+3.b. You can always run commands to gather additional details if needed.
+3.c. You can use pipe '|' to chain commands for efficiency.
+3.d. You also have access to jq for JSON processing and can use it in commands.
 4. Always explain what each kubectl command will do before suggesting it
 5. Use the execute_shell_command function to run kubectl commands
-6. Provide clear, actionable responses
+6. Provide clear, actionable responses.
+7. Your responses will be printed to the console.
+Use colors and emojis to enhance readability.
+YOU MUST NOT USE MARKDOWN formatting in your responses.
 
 Available tools:
 - execute_shell_command: Execute safe read-only shell commands, primarily kubectl operations
 
-Current mode: READ-ONLY (no cluster modifications)
+Current mode: READ-ONLY (no cluster modifications, no installations, no changes)
 
 Guidelines:
-- Only use safe, read-only kubectl commands like: get, describe, logs, explain, version, etc.
-- Do not use write operations like: create, apply, delete, patch, edit, scale, etc.
+- Only use safe, read-only commands: e.g. for kubectl - get, describe, logs, explain, version, etc.
+- Do not use write operations: e.g. for kubectl - create, apply, delete, patch, edit, scale, etc.
 - When you want to run a command, use the execute_shell_command function
-- Explain what you're going to do before executing commands
-- If you achieve the goal or cannot proceed further, say "GOAL_COMPLETE"`
+- Explain what you're going to do before executing commands.
+- If you achieve the goal or cannot proceed further, say "**DONE**."`, contextInfo)
 
 		// Start conversation with system prompt and user goal
 		messages := []llm.Message{
@@ -139,15 +162,36 @@ Guidelines:
 		for stepCount < maxSteps {
 			stepCount++
 			fmt.Println(strings.Repeat("=", 40))
-			fmt.Printf("📋 Step %d: Consulting LLM...\n", stepCount)
+			fmt.Printf("📋 Step %d:\n", stepCount)
+
+			// Animated 'Thinking...' spinner
+			thinkingDone := make(chan struct{})
+			spinnerLine := ""
+			go func() {
+				spinner := []string{"   ", ".  ", ".. ", "..."}
+				idx := 0
+				for {
+					select {
+					case <-thinkingDone:
+						return
+					default:
+						spinnerLine = fmt.Sprintf("\r💭 Thinking%s", spinner[idx])
+						fmt.Print(spinnerLine)
+						idx = (idx + 1) % len(spinner)
+						time.Sleep(350 * time.Millisecond)
+					}
+				}
+			}()
 
 			// Get response from LLM with tools
 			response, err := unifiedProvider.ChatWithTools(context.Background(), messages, tools)
+			close(thinkingDone)
+			// Clear spinner line and print response in its place
+			fmt.Printf("\r%40s\r", "") // Clear spinner line
 			if err != nil {
 				return fmt.Errorf("failed to get LLM response: %w", err)
 			}
-
-			fmt.Printf("💭 LLM Response:\n%s\n", response.Content)
+			fmt.Printf("💭 %s\n", response.Content)
 
 			// Add LLM response to conversation history
 			assistantMsg := llm.Message{
@@ -163,7 +207,17 @@ Guidelines:
 				// Execute tool calls
 				for _, toolCall := range response.ToolCalls {
 					fmt.Printf("\n🔧 Executing tool: %s\n", toolCall.Function.Name)
-					fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
+
+					// Parse arguments as JSON for better readability
+					var argsMap map[string]interface{}
+					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &argsMap); err == nil {
+						fmt.Println("📝 Arguments:")
+						for k, v := range argsMap {
+							fmt.Printf("  %s: %v\n", k, v)
+						}
+					} else {
+						fmt.Printf("📝 Arguments: %s\n", toolCall.Function.Arguments)
+					}
 
 					// Execute the tool
 					result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
@@ -213,12 +267,11 @@ Guidelines:
 			}
 
 			// Check if goal is complete
-			if strings.Contains(strings.ToUpper(response.Content), "GOAL_COMPLETE") {
+			if strings.Contains(strings.ToUpper(response.Content), "**DONE**") {
 				entry.Status = "completed"
 				if err := manager.UpdateEntry(entry); err != nil {
 					return fmt.Errorf("failed to update entry status: %w", err)
 				}
-				fmt.Printf("\n🎉 Goal completed successfully!\n")
 				return nil
 			}
 			fmt.Println(strings.Repeat("=", 40))
@@ -239,6 +292,28 @@ Guidelines:
 			}
 		}
 
+		// Final summary step: ask LLM to summarize session
+		summaryPrompt := `To tell the user what was done in this session on shell console,
+summarize each step taken as a simple checklist.
+e.g. "Step 02: ✅ All pods in the production namespace listed." (use cross emoji for failed tool calls)
+The last line should be a single sentence saying what was done. Followed by **DONE**.
+- be clear and concise to summarize the user's original question/command.`
+
+		messages = append(messages, llm.Message{
+			Role:    "user",
+			Content: summaryPrompt,
+		})
+		response, err := unifiedProvider.ChatWithTools(context.Background(), messages, tools)
+		if err != nil {
+			fmt.Printf("\n❌ Failed to get summary from LLM: %v\n", err)
+		} else {
+			fmt.Println("\n==============================")
+			fmt.Println("📋 Session Summary Checklist")
+			fmt.Println("==============================")
+			fmt.Printf("%s\n", response.Content)
+			fmt.Println("==============================")
+		}
+
 		return nil
 	},
 }
@@ -246,6 +321,6 @@ Guidelines:
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	// Add confirm flag to get explicit permission before tool execution
-	runCmd.Flags().BoolP("confirm", "c", false, "Ask for confirmation before executing each tool")
+	// Add confirm flag with alias a
+	runCmd.Flags().BoolP("confirm", "a", false, "Ask for confirmation before executing each tool")
 }

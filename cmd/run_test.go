@@ -97,8 +97,8 @@ func TestRunCommandFlags(t *testing.T) {
 	}
 
 	// Check flag properties
-	if confirmFlag.Shorthand != "c" {
-		t.Errorf("Confirm flag shorthand = %q, want %q", confirmFlag.Shorthand, "c")
+	if confirmFlag.Shorthand != "a" {
+		t.Errorf("Confirm flag shorthand = %q, want %q", confirmFlag.Shorthand, "a")
 	}
 
 	if confirmFlag.DefValue != "false" {

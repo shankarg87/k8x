@@ -70,6 +70,8 @@ func NewShellExecutor(workDir string) *ShellExecutor {
 	// Define allowed kubectl and other safe read-only commands
 	allowedCommands := []string{
 		"kubectl",
+		"helm",      // for Helm releases and chart information
+		"kustomize", // for Kustomize version and operations
 		"echo",
 		"cat",
 		"ls",
@@ -138,9 +140,23 @@ func (se *ShellExecutor) Execute(command string) (string, error) {
 		}
 	}
 
+	// Additional safety checks for helm
+	if baseCmd == "helm" {
+		if se.containsHelmWriteOperations(command) {
+			return "", fmt.Errorf("helm write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
+	// Additional safety checks for kustomize
+	if baseCmd == "kustomize" {
+		if se.containsKustomizeWriteOperations(command) {
+			return "", fmt.Errorf("kustomize write operations are not allowed in read-only mode. Command: %s", command)
+		}
+	}
+
 	// Set up environment for kubectl if kubeconfig path is specified
 	env := os.Environ()
-	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && baseCmd == "kubectl" {
+	if se.k8sConfig != nil && se.k8sConfig.KubeConfigPath != "" && (baseCmd == "kubectl" || baseCmd == "helm" || baseCmd == "kustomize") {
 		env = append(env, fmt.Sprintf("KUBECONFIG=%s", se.k8sConfig.KubeConfigPath))
 	}
 
@@ -174,6 +190,56 @@ func (se *ShellExecutor) containsWriteOperations(command string) bool {
 	}
 
 	lowerCmd := strings.ToLower(command)
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsHelmWriteOperations checks if a helm command contains write operations
+func (se *ShellExecutor) containsHelmWriteOperations(command string) bool {
+	writeOps := []string{
+		"install", "upgrade", "uninstall", "delete", "create", "rollback",
+		"plugin", "push", "pull", "registry",
+	}
+	repoWriteOps := []string{"add", "remove"}
+
+	lowerCmd := strings.ToLower(command)
+
+	// Handle "helm repo" commands separately
+	if strings.HasPrefix(lowerCmd, "helm repo") {
+		for _, op := range repoWriteOps {
+			if strings.Contains(lowerCmd, " repo "+op+" ") || strings.HasSuffix(lowerCmd, " repo "+op) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Check for other write operations
+	for _, op := range writeOps {
+		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsKustomizeWriteOperations checks if a kustomize command contains write operations
+func (se *ShellExecutor) containsKustomizeWriteOperations(command string) bool {
+	writeOps := []string{
+		"create", "edit", "fix", "localize", "cfg",
+	}
+
+	lowerCmd := strings.ToLower(command)
+	// Allow only version and build commands (build is read-only, just outputs YAML)
+	if strings.Contains(lowerCmd, " version") || strings.Contains(lowerCmd, " build") ||
+		strings.Contains(lowerCmd, " --version") {
+		return false
+	}
+
 	for _, op := range writeOps {
 		if strings.Contains(lowerCmd, " "+op+" ") || strings.Contains(lowerCmd, " "+op) {
 			return true

@@ -55,7 +55,7 @@ For security reasons, E2E tests in PRs from forks will be compiled but skip actu
 
 ## Adding Tests
 
-### Unit Tests
+### Unit Test Practices
 
 Follow Go's standard testing practices:
 

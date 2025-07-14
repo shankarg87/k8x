@@ -3,9 +3,10 @@
 # Build variables
 BINARY_NAME=k8x
 BUILD_DIR=build
-VERSION?=$(shell git describe --tags --always --dirty)
-COMMIT?=$(shell git rev-parse HEAD)
-DATE?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+# VERSION uses git tag if present, else commit hash (nightly/dev builds will show 'nightly' from code)
+VERSION?=$(shell git describe --tags --abbrev=0 2>/dev/null || echo nightly)
+COMMIT?=$(shell git rev-parse --short HEAD)
+DATE?=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 
 # Go variables
 GOBASE=$(shell pwd)

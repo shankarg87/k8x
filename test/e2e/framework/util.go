@@ -49,14 +49,14 @@ func CheckEnvironment() error {
 	// Check if Docker is running
 	if err := exec.Command("docker", "info").Run(); err != nil {
 		fmt.Println("Docker does not seem to be running. Please start Docker before running E2E tests.")
-		return fmt.Errorf("Warning: Docker does not seem to be running. E2E tests will fail.")
+		return fmt.Errorf("warning: Docker does not seem to be running. E2E tests will fail")
 	}
 
 	// Check for API key
 	if os.Getenv("OPENAI_API_KEY") == "" {
 		fmt.Println("To run complete tests, set the environment variable:")
 		fmt.Println("    export OPENAI_API_KEY=your-api-key")
-		return fmt.Errorf("Warning: OPENAI_API_KEY is not set. E2E tests will use a dummy API key and may fail.")
+		return fmt.Errorf("warning: OPENAI_API_KEY is not set. E2E tests will use a dummy API key and may fail")
 	}
 
 	// Check if in CI
@@ -65,7 +65,7 @@ func CheckEnvironment() error {
 		if IsExternalPR() && !HasAPIKeys() {
 			fmt.Println("External PR detected without API keys available.")
 			fmt.Println("Tests will be compiled but skipped at runtime.")
-			return fmt.Errorf("Warning: Running in external PR without API keys. E2E tests will be skipped.")
+			return fmt.Errorf("warning: running in external PR without API keys. E2E tests will be skipped")
 		}
 	}
 

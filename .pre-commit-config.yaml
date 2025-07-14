@@ -6,7 +6,7 @@ default_install_hook_types:
 repos:
   # 1) Core Go tooling
   - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.4.0
+    rev: v0.5.1
     hooks:
       - id: go-fmt
       - id: go-imports
@@ -44,7 +44,7 @@ repos:
         args: [--branch=main]
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         name: Format .md
@@ -95,7 +95,7 @@ repos:
         files: \.(yaml|yml)$
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.45.0
     hooks:
       - id: markdownlint
         name: Format .md
@@ -105,7 +105,7 @@ repos:
         files: \.md$
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.4.1
     hooks:
       - id: codespell
         name: Check spelling
@@ -113,7 +113,7 @@ repos:
         exclude: \.(csv|sql|yaml)$|^frontend/.*|^node_modules/.*
 
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.0.0
+    rev: v4.2.0
     hooks:
       - id: conventional-pre-commit
         name: Check commit message

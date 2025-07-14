@@ -1,7 +1,9 @@
 name: Test Suite
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   e2e-tests:
@@ -53,7 +55,7 @@ jobs:
         if: steps.check-api-key.outputs.is_api_key_available == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: make test-e2e 
+        run: make test-e2e
 
       - name: Run E2E tests in skip mode
         if: steps.check-api-key.outputs.is_api_key_available == 'false'
