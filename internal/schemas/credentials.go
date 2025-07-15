@@ -13,6 +13,7 @@ type Credentials struct {
 		APIKey string `yaml:"api_key"`
 	} `yaml:"anthropic"`
 	Google struct {
+		APIKey                 string `yaml:"api_key"`
 		ApplicationCredentials string `yaml:"application_credentials"`
 	} `yaml:"google"`
 }
@@ -27,6 +28,10 @@ func (c *Credentials) HasAnyKey(keys ...string) bool {
 			}
 		case "anthropic_api_key":
 			if c.Anthropic.APIKey != "" {
+				return true
+			}
+		case "gemini_api_key":
+			if c.Google.APIKey != "" {
 				return true
 			}
 		case "google_application_credentials":
@@ -51,6 +56,6 @@ func (c *Credentials) SetProviderAPIKey(provider, apiKey string) {
 	case "anthropic":
 		c.Anthropic.APIKey = apiKey
 	case "google":
-		c.Google.ApplicationCredentials = apiKey
+		c.Google.APIKey = apiKey
 	}
 }

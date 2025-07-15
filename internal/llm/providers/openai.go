@@ -50,7 +50,7 @@ func (p *OpenAIProvider) IsConfigured() bool {
 // Chat sends a message and returns the response
 func (p *OpenAIProvider) Chat(ctx context.Context, messages []llm.Message) (*llm.Response, error) {
 	if !p.IsConfigured() {
-		return nil, fmt.Errorf("OpenAI provider not configured")
+		return nil, fmt.Errorf("openAI provider not configured")
 	}
 
 	// Convert messages
@@ -137,7 +137,7 @@ func (p *OpenAIProvider) Chat(ctx context.Context, messages []llm.Message) (*llm
 // ChatWithTools sends a message with tool support and returns the response
 func (p *OpenAIProvider) ChatWithTools(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Response, error) {
 	if !p.IsConfigured() {
-		return nil, fmt.Errorf("OpenAI provider not configured")
+		return nil, fmt.Errorf("openAI provider not configured")
 	}
 
 	// Convert messages

@@ -82,7 +82,7 @@ Also supported:
 		if err != nil {
 			return errors.New("k8x is not configured correctly.\nHint: Please run `k8x configure`")
 		}
-		if !creds.HasAnyKey("openai_api_key", "anthropic_api_key", "google_application_credentials") {
+		if !creds.HasAnyKey("openai_api_key", "anthropic_api_key", "gemini_api_key") {
 			return errors.New("k8x cannot find any LLM configured.\nHint: Run 'k8x configure' to set up your LLM provider")
 		}
 
@@ -92,6 +92,7 @@ Also supported:
 		}
 		provCreds.OpenAI.APIKey = creds.OpenAI.APIKey
 		provCreds.Anthropic.APIKey = creds.Anthropic.APIKey
+		provCreds.Google.APIKey = creds.Google.APIKey
 		provCreds.Google.ApplicationCredentials = creds.Google.ApplicationCredentials
 
 		unifiedProvider, err := providers.NewUnifiedProvider(provCreds)
