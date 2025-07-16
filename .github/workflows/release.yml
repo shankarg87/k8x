@@ -37,10 +37,12 @@ jobs:
           password: ${{ secrets.HOMEBREW_K8X_GITHUB_TOKEN }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: latest
+          version: '~> v2' # update to latest stable version
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_K8X_GITHUB_TOKEN }}
+          name: k8x-binary
+          path: build/k8x
