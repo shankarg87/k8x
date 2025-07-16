@@ -56,11 +56,11 @@ changelog:
       - '^test:'
 
 brews:
-  - tap:
-      owner: shankgan
+  - repository:
+      owner: shankarg87
       name: homebrew-tap
-    folder: Formula
-    homepage: https://github.com/shankgan/k8x
+    directory: Formula
+    homepage: https://github.com/shankarg87/k8x
     description: "Agentic kubectl - AI-powered Kubernetes operations"
     license: "MIT"
     test: |
@@ -73,27 +73,13 @@ nfpms:
     package_name: k8x
     file_name_template: "{{ .ConventionalFileName }}"
     vendor: Shank Gan
-    homepage: https://github.com/shankgan/k8x
+    homepage: https://github.com/shankarg87/k8x
     maintainer: Shank Gan <shank@example.com>
     description: "Agentic kubectl - AI-powered Kubernetes operations"
     license: MIT
     formats:
       - deb
       - rpm
-
-snapcrafts:
-  - name: k8x
-    publish: true
-    summary: Agentic kubectl
-    description: AI-powered Kubernetes operations tool
-    grade: stable
-    confinement: strict
-    license: MIT
-    base: core22
-    apps:
-      k8x:
-        command: k8x
-        plugs: ["home", "network"]
 
 dockers:
   - image_templates:
@@ -111,14 +97,14 @@ dockers:
       - "--platform=linux/amd64"
 
 docker_manifests:
-  - name_template: "ghcr.io/shankgan/k8x:{{ .Tag }}"
+  - name_template: "ghcr.io/ai-hero/homebrew-k8x:{{ .Tag }}"
     image_templates:
-      - "ghcr.io/shankgan/k8x:{{ .Tag }}-amd64"
-      - "ghcr.io/shankgan/k8x:{{ .Tag }}-arm64"
-  - name_template: "ghcr.io/shankgan/k8x:latest"
+      - "ghcr.io/ai-hero/homebrew-k8x:{{ .Tag }}-amd64"
+      - "ghcr.io/ai-hero/homebrew-k8x:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/ai-hero/homebrew-k8x:latest"
     image_templates:
-      - "ghcr.io/shankgan/k8x:latest-amd64"
-      - "ghcr.io/shankgan/k8x:latest-arm64"
+      - "ghcr.io/ai-hero/homebrew-k8x:latest-amd64"
+      - "ghcr.io/ai-hero/homebrew-k8x:latest-arm64"
 
 sboms:
-  - artifacts: archive
+  - artifacts: archive - "--platform=linux/amd64"
