@@ -107,4 +107,4 @@ docker_manifests:
       - "ghcr.io/ai-hero/homebrew-k8x:latest-arm64"
 
 sboms:
-  - artifacts: archive - "--platform=linux/amd64"
+  - artifacts: archive
