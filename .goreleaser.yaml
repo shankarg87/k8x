@@ -32,11 +32,7 @@ builds:
       - -s -w -X github.com/shankarg87/k8x/cmd.version={{.Version}} -X github.com/shankarg87/k8x/cmd.commit={{.Commit}} -X github.com/shankarg87/k8x/cmd.date={{.Date}}
 
 archives:
-  - format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
-    name_template: >-
+  - name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
@@ -58,7 +54,8 @@ changelog:
       - '^test:'
 
 brews:
-  - repository:
+  - name: k8x
+    repository:
       owner: ai-hero
       name: homebrew-k8x
     directory: Formula
