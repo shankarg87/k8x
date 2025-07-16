@@ -95,12 +95,12 @@ snapcrafts:
         command: k8x
         plugs: ["home", "network"]
 
-docker_images:
+dockers:
   - image_templates:
-      - "ghcr.io/shankgan/k8x:{{ .Tag }}"
-      - "ghcr.io/shankgan/k8x:v{{ .Major }}"
-      - "ghcr.io/shankgan/k8x:v{{ .Major }}.{{ .Minor }}"
-      - "ghcr.io/shankgan/k8x:latest"
+      - "ghcr.io/ai-hero/homebrew-k8x:{{ .Tag }}"
+      - "ghcr.io/ai-hero/homebrew-k8x:v{{ .Major }}"
+      - "ghcr.io/ai-hero/homebrew-k8x:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/ai-hero/homebrew-k8x:latest"
     dockerfile: Dockerfile
     build_flag_templates:
       - "--pull"
