@@ -6,7 +6,7 @@
 
 **Agentic kubectl** - AI-powered Kubernetes operations
 
-k8x is an intelligent CLI tool that acts as an AI-powered layer on top of kubectl. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
+k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubectl`. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
 
 ## Features
 
