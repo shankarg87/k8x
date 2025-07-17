@@ -95,7 +95,7 @@ snapcrafts:
         command: k8x
         plugs: ["home", "network"]
 
-dockers:
+docker_images:
   - image_templates:
       - "ghcr.io/shankgan/k8x:{{ .Tag }}"
       - "ghcr.io/shankgan/k8x:v{{ .Major }}"
