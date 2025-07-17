@@ -24,7 +24,7 @@ different deployments/services/ingress/etc in your kubernetes cluster.
 
 ## Quick Start
 
-### Installation
+### Release v0.1.1
 
 ```bash
 # Homebrew (recommended)
