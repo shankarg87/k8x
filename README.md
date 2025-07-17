@@ -20,18 +20,19 @@ k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubec
 
 ## Quick Start
 
-### Installation
+### Release v0.1.1
 
 ```bash
 # Homebrew (recommended)
-brew install shankgan/tap/k8x
+brew tap aihero/k8x
+brew install k8x
 
-# Download binary
-curl -L https://github.com/shankgan/k8x/releases/latest/download/k8x_Linux_x86_64.tar.gz | tar xz
-sudo mv k8x /usr/local/bin/
+k8x --version
 
-# Docker
-docker run ghcr.io/shankgan/k8x:latest
+
+# To upgrade
+brew update          # fetches the latest tap and core metadata
+brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
 ```
 
 ### Setup
