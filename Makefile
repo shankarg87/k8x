@@ -29,7 +29,7 @@ build: ## Build the binary
 
 test: ## Run unit tests
 	@echo "Running tests..."
-	@go test -v ./... -short
+	@go test -v -race ./... -short
 
 test-e2e: build ## Run end-to-end tests
 	@echo "Running E2E tests..."
@@ -62,6 +62,10 @@ fmt: ## Run go fmt
 	@echo "Formatting code..."
 	@go fmt ./...
 
+go-imports: ## Run goimports to manage imports
+	@echo "Managing imports..."
+	@goimports -w .
+
 vet: ## Run go vet
 	@echo "Running go vet..."
 	@go vet ./...
@@ -70,7 +74,7 @@ mod-tidy: ## Run go mod tidy
 	@echo "Tidying modules..."
 	@go mod tidy
 
-dev: fmt vet lint mod-tidy ## Run development checks (format, vet, lint, mod-tidy)
+dev: fmt go-imports vet lint mod-tidy ## Run development checks (format, imports, vet, lint, mod-tidy)
 
 release-test: ## Test release build with GoReleaser
 	@echo "Testing release build..."
@@ -93,11 +97,31 @@ generate: ## Run go generate
 	@go generate ./...
 
 # Development setup
-setup: ## Set up development environment
-	@echo "Setting up development environment..."
+setup-dev-ci: ## Set up development environment for CI/CD
+	@echo "Setting up CI development environment..."
 	@go mod download
-	@which golangci-lint > /dev/null || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
-	@which goreleaser > /dev/null || (echo "Installing goreleaser..." && go install github.com/goreleaser/goreleaser@latest)
+	@echo "Installing golangci-lint..."
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.2
+	@echo "Installing goreleaser..."
+	@go install github.com/goreleaser/goreleaser/v2@latest
+	@echo "Installing goimports..."
+	@go install golang.org/x/tools/cmd/goimports@latest
+	@echo "Installing pre-commit..."
+	@pip install pre-commit
+	@echo "CI environment setup complete"
+
+setup-dev-macos: ## Set up macOS development environment with Homebrew
+	@echo "Setting up macOS development environment..."
+	@go mod download
+	@which brew > /dev/null || (echo "Error: Homebrew not found. Please install from https://brew.sh" && exit 1)
+	@which golangci-lint > /dev/null || (echo "Installing golangci-lint via Homebrew..." && brew install golangci-lint)
+	@which goreleaser > /dev/null || (echo "Installing goreleaser via Homebrew..." && brew install goreleaser)
+	@which goimports > /dev/null || (echo "Installing goimports..." && brew install goimports)
+	@which pre-commit > /dev/null || (echo "Installing pre-commit via Homebrew..." && brew install pre-commit)
+
+goreleaser-upgrade: ## Upgrade GoReleaser config to version 2
+	@echo "Upgrading GoReleaser configuration..."
+	@goreleaser migrate --auto
 
 # Create directories
 build-dir:

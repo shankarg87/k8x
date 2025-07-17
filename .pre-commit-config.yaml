@@ -1,29 +1,32 @@
 default_install_hook_types:
-  - pre-commit
   - pre-push
   - commit-msg
 
 repos:
-  # 1) Core Go tooling
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
-    hooks:
-      - id: go-fmt
-      - id: go-imports
-      - id: go-vet
-      - id: go-mod-tidy
-
-  # 2) Use local golangci-lint installation
+  # 1) Use Makefile targets for Go development workflow
   - repo: local
     hooks:
-      - id: golangci-lint
-        name: golangci-lint
-        entry: golangci-lint run --timeout=5m
+      - id: make-dev
+        name: make dev (fmt, imports, vet, lint, mod-tidy)
+        entry: make dev
         language: system
         types: [go]
         pass_filenames: false
 
-      # GoReleaser build test to ensure the project can be built successfully
+      - id: make-build
+        name: make build (snapshot build test)
+        entry: make build
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: make-test
+        name: make test (race & coverage)
+        entry: make test
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: goreleaser-build
         name: goreleaser build (snapshot, single-target)
         entry: goreleaser build --snapshot --clean --single-target
@@ -31,17 +34,7 @@ repos:
         pass_filenames: false
         always_run: true
 
-  # 3) Full go test suite (race + coverage) as in CI
-  - repo: local
-    hooks:
-      - id: go-test-full
-        name: go test (race & coverage)
-        entry: bash -c "go test -v -race -coverprofile=coverage.out ./... -short && echo 'Tests completed successfully'"
-        language: system
-        pass_filenames: false
-        always_run: true
-
-  # 4) YAML and Markdown linting, and branch protection
+  # 2) YAML and Markdown linting, and branch protection
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -64,7 +57,7 @@ repos:
         exclude: CHANGELOG.md$
         files: \.md$
 
-  # 5) Additional useful checks
+  # 3) Additional useful checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
