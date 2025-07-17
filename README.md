@@ -1,37 +1,37 @@
-# k8x
+# k8x - GenAI-powered Kubernetes operations
+
+k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubectl`. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
 
 [![CI](https://github.com/shankgan/k8x/workflows/CI/badge.svg)](https://github.com/shankgan/k8x/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shankgan/k8x)](https://goreportcard.com/report/github.com/shankgan/k8x)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Agentic kubectl** - AI-powered Kubernetes operations
+## Release v0.1.1
 
-k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubectl`. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
+`v0.1.1` is the first release for `k8x`. It performs read only operations on your kubernetes cluster
+using `kubectl`, and is super effective at running multi-step checks and diagnostics over
+different deployments/services/ingress/etc in your kubernetes cluster.
 
 ## Features
 
 - 🤖 **Natural Language Interface**: Ask questions about your cluster in plain English
-- 🔄 **Autonomous Execution**: AI agent executes safe kubectl commands automatically
-- 🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
-- 📚 **Command History**: Automatic tracking with undo support
+- 🔄 **Autonomous Multi-step Execution**: AI agent executes safe kubectl commands automatically
 - 🔌 **Multi-LLM Support**: OpenAI, Anthropic Claude, and other providers
+- 🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
 - 🛡️ **Secure by Default**: Read-only mode with command filtering
+- 📚 **Command History**: Automatic tracking with undo support
 - 🎯 **Context-Aware**: Understands cluster state and provides relevant suggestions
 
 ## Quick Start
 
-### Release v0.1.1
+### Installation
 
 ```bash
 # Homebrew (recommended)
 brew tap aihero/k8x
 brew install k8x
 
-k8x --version
-
-# To upgrade
-brew update          # fetches the latest tap and core metadata
-brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
+k8x --version # v0.1.1
 ```
 
 ### Setup
@@ -63,19 +63,26 @@ brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
 
 ## Usage Examples
 
-```bash
-# Diagnose pod issues
-k8x -c "Find all pods that are not ready and explain why"
+   ```bash
+   # Diagnose pod issues
+   k8x -c "Find all pods that are not ready and explain why"
 
-# Resource analysis
-k8x -c "Check resource usage across all namespaces"
+   # Resource analysis
+   k8x -c "Check resource usage across all namespaces"
 
-# Service troubleshooting
-k8x -c "Diagnose why my service endpoints are empty"
+   # Service troubleshooting
+   k8x -c "Diagnose why my service endpoints are empty"
 
-# View command history
-k8x history list
-```
+   # View command history
+   k8x history list
+   ```
+
+### Upgrades
+
+   ```bash
+   brew update          # fetches the latest tap and core metadata
+   brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
+   ```
 
 ## Developer Documentation
 
