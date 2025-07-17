@@ -64,6 +64,7 @@ make test-coverage
 The repository uses these pre-commit hooks (see `.pre-commit-config.yaml`):
 
 - **golangci-lint** – Go code linting
+- **goreleaser-build** – Validates project can be built with goreleaser (single-target for speed)
 - **go-fmt** – Code formatting
 - **go-imports** – Import management
 - **go-mod-tidy** – Module tidying
