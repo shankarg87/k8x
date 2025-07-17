@@ -29,7 +29,6 @@ brew install k8x
 
 k8x --version
 
-
 # To upgrade
 brew update          # fetches the latest tap and core metadata
 brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
@@ -40,23 +39,26 @@ brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
 1. **Initialize configuration:**
 
    ```bash
-   k8x config init
+   k8x configure
    ```
 
-2. **Add your LLM API key to ~/.k8x/credentials:**
+1. **When prompted, choose your LLM provider and add your LLM API key**
 
-   ```bash
-   vim ~/.k8x/credentials
+   ```text
+   Select your preferred LLM provider:
+   1. OpenAI
+   2. Anthropic
+   3. Google (Gemini API)
+   Enter choice [1-3]: 2
+   Enter your Anthropic API key:
    ```
 
-3. **Start using k8x:**
+   > NOTE: The configuration and key is saved in `~/.k8x/credentials`.
+
+1. **Start using k8x:**
 
    ```bash
    k8x -c "are all pods running?"
-   # Or
-   k8x run "are all pods running?"
-   # Or
-   k8x command "are all pods running?"
    ```
 
 ## Usage Examples
@@ -75,53 +77,9 @@ k8x -c "Diagnose why my service endpoints are empty"
 k8x history list
 ```
 
-## Documentation
-
-- 📖 **[Complete Documentation](./docs/README.md)** - Installation, configuration, and usage guide
-- 🔧 **[Shell Execution Tool](./docs/shell-execution-tool.md)** - Security model and command filtering
-- 📚 **[Usage Examples](./examples/basic-usage.md)** - Common use cases and patterns
-- 🧪 **[Testing Guide](./docs/testing.md)** - Unit and E2E testing documentation
-
-## Development
+## Developer Documentation
 
 > **For Developers**: See [Developer Documentation](./docs/README.md#development) for complete setup instructions.
-
-### Quick Developer Setup
-
-```bash
-# Clone and setup
-git clone https://github.com/shankgan/k8x.git && cd k8x
-make deps && make build
-
-# Configure and test
-./build/k8x configure
-./build/k8x -c "are all pods running?"
-```
-
-### Project Structure
-
-```text
-k8x/
-├── cmd/                 # CLI commands (Cobra, 'run', 'command', '-c' all supported)
-├── internal/
-│   ├── config/         # Configuration management
-│   ├── llm/            # LLM provider interfaces
-│   └── history/        # Command history tracking
-├── docs/               # Documentation
-├── examples/           # Usage examples
-└── test/e2e/           # End-to-end tests
-```
-
-### Testing
-
-```bash
-# Unit tests
-make test
-
-# E2E tests (requires kind, kubectl, Docker)
-export OPENAI_API_KEY=your-api-key
-make test-e2e
-```
 
 ## Contributing
 
