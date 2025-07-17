@@ -2,8 +2,8 @@
 
 k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubectl`. It helps you manage Kubernetes resources through natural language commands and provides intelligent troubleshooting capabilities.
 
-[![CI](https://github.com/shankgan/k8x/workflows/CI/badge.svg)](https://github.com/shankgan/k8x/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shankgan/k8x)](https://goreportcard.com/report/github.com/shankgan/k8x)
+[![CI](https://github.com/shankarg87/k8x/workflows/CI/badge.svg)](https://github.com/shankarg87/k8x/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shankarg87/k8x)](https://goreportcard.com/report/github.com/shankarg87/k8x)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Release v0.1.1
@@ -24,7 +24,7 @@ different deployments/services/ingress/etc in your kubernetes cluster.
 
 ## Quick Start
 
-### Release v0.1.1
+### Installation
 
 ```bash
 # Homebrew (recommended)

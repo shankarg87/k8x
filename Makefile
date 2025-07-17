@@ -14,7 +14,7 @@ GOBIN=$(GOBASE)/$(BUILD_DIR)
 GOFILES=$(wildcard *.go)
 
 # Build flags
-LDFLAGS=-ldflags "-s -w -X github.com/shankgan/k8x/cmd.version=$(VERSION) -X github.com/shankgan/k8x/cmd.commit=$(COMMIT) -X github.com/shankgan/k8x/cmd.date=$(DATE)"
+LDFLAGS=-ldflags "-s -w -X github.com/shankarg87/k8x/cmd.version=$(VERSION) -X github.com/shankarg87/k8x/cmd.commit=$(COMMIT) -X github.com/shankarg87/k8x/cmd.date=$(DATE)"
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
