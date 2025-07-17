@@ -23,6 +23,14 @@ repos:
         types: [go]
         pass_filenames: false
 
+      # GoReleaser build test to ensure the project can be built successfully
+      - id: goreleaser-build
+        name: goreleaser build (snapshot, single-target)
+        entry: goreleaser build --snapshot --clean --single-target
+        language: system
+        pass_filenames: false
+        always_run: true
+
   # 3) Full go test suite (race + coverage) as in CI
   - repo: local
     hooks:
