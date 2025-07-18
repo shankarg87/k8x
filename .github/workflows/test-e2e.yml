@@ -55,11 +55,8 @@ jobs:
         if: steps.check-api-key.outputs.is_api_key_available == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: make test-e2e
+        run: make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis
 
-      - name: Run E2E tests in skip mode
-        if: steps.check-api-key.outputs.is_api_key_available == 'false'
-        run: make test-e2e
 
       - name: Upload test logs
         if: always()

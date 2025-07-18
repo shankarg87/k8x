@@ -61,7 +61,7 @@ brews:
     directory: Formula
     homepage: https://github.com/shankarg87/k8x
     description: "Agentic kubectl - AI-powered Kubernetes operations"
-    license: "MIT"
+    license: "Apache-2.0"
     test: |
       system "#{bin}/k8x --version"
     install: |
@@ -71,11 +71,11 @@ nfpms:
   - id: packages
     package_name: k8x
     file_name_template: "{{ .ConventionalFileName }}"
-    vendor: Shank Gan
+    vendor: Shankar
     homepage: https://github.com/shankarg87/k8x
-    maintainer: Shank Gan <shank@example.com>
+    maintainer: Shankar <gshankar.87@gmail.com>
     description: "Agentic kubectl - AI-powered Kubernetes operations"
-    license: MIT
+    license: Apache-2.0
     formats:
       - deb
       - rpm

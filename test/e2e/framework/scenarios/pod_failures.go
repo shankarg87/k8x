@@ -15,7 +15,7 @@ metadata:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: crash-loop-pod
+  name: crash-loop
   namespace: k8x-test
   labels:
     app: crash-loop
