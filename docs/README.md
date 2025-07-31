@@ -195,6 +195,12 @@ make test-e2e
 
 # Run specific E2E test with debugging
 make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis
+
+# Run MCP integration tests (requires Python/internet)
+make test-integration
+
+# Run all integration tests
+make test-integration-all
 ```
 
 See [testing.md](testing.md) for detailed testing documentation.
