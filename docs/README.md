@@ -16,7 +16,7 @@ This document provides comprehensive developer setup instructions, architecture 
 
 ```bash
 # 1. Clone and navigate
-git clone https://github.com/shankgan/k8x.git && cd k8x
+git clone https://github.com/shankarg87/k8x.git && cd k8x
 
 # 2. Install dependencies
 make deps
@@ -295,8 +295,8 @@ go version  # Should be 1.21+
 
 ### Getting Help
 
-- **Issues**: [GitHub Issues](https://github.com/shankgan/k8x/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/shankgan/k8x/discussions)
+- **Issues**: [GitHub Issues](https://github.com/shankarg87/k8x/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/shankarg87/k8x/discussions)
 - **Discord**: [Development Discord](https://discord.gg/k8x-dev)
 
 ---
@@ -314,17 +314,17 @@ k8x is an AI-powered CLI tool that acts as an intelligent layer on top of kubect
 ### Homebrew
 
 ```bash
-brew install shankgan/tap/k8x
+brew install shankarg87/tap/k8x
 ```
 
 ### Download Binary
 
-Download the latest release from [GitHub Releases](https://github.com/shankgan/k8x/releases).
+Download the latest release from [GitHub Releases](https://github.com/shankarg87/k8x/releases).
 
 ### Docker
 
 ```bash
-docker run ghcr.io/shankgan/k8x:latest
+docker run ghcr.io/shankarg87/k8x:latest
 ```
 
 ## Configuration
