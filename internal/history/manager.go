@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -61,11 +60,7 @@ func (m *Manager) Save(entry *Entry) error {
 		entry.Timestamp = time.Now()
 	}
 
-	// Create kebab-case filename
-	goalKebab := strings.ToLower(strings.ReplaceAll(entry.Goal, " ", "-"))
-	goalKebab = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(goalKebab, "")
-	filename := fmt.Sprintf("%s-%s.k8x", goalKebab, entry.Timestamp.Format("20060102-150405"))
-
+	filename := fmt.Sprintf("%s.k8x", entry.Timestamp.Format("20060102-150405"))
 	filepath := filepath.Join(m.historyDir, filename)
 
 	var content strings.Builder

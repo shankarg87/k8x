@@ -23,6 +23,8 @@ const (
 type Config struct {
 	// LLM configuration
 	LLM LLMConfig `yaml:"llm"`
+	// MCP configuration
+	MCP MCPConfig `yaml:"mcp"`
 	// Kubernetes configuration
 	Kubernetes KubernetesConfig `yaml:"kubernetes"`
 	// General settings
@@ -35,6 +37,48 @@ type LLMConfig struct {
 	DefaultProvider string `yaml:"default_provider"`
 	// Providers contains provider-specific configurations
 	Providers map[string]ProviderConfig `yaml:"providers"`
+}
+
+// MCPConfig contains configuration for MCP servers
+type MCPConfig struct {
+	// Servers contains MCP server configurations
+	Servers map[string]MCPServerConfig `yaml:"servers"`
+	// Enabled controls whether MCP integration is enabled
+	Enabled bool `yaml:"enabled"`
+}
+
+// MCPServerConfig contains configuration for a specific MCP server
+type MCPServerConfig struct {
+	// Transport specifies the transport type (stdio, sse, http, oauth-sse, oauth-http)
+	Transport string `yaml:"transport"`
+	// Enabled controls whether this server is enabled
+	Enabled bool `yaml:"enabled"`
+	// Description is a human-readable description of the server
+	Description string `yaml:"description,omitempty"`
+
+	// Stdio transport configuration
+	Command string            `yaml:"command,omitempty"`
+	Args    []string          `yaml:"args,omitempty"`
+	Env     map[string]string `yaml:"env,omitempty"`
+
+	// HTTP/SSE transport configuration
+	BaseURL string `yaml:"base_url,omitempty"`
+
+	// OAuth configuration (for oauth-sse and oauth-http transports)
+	OAuth *OAuthConfig `yaml:"oauth,omitempty"`
+
+	// Transport-specific options
+	Options map[string]interface{} `yaml:"options,omitempty"`
+}
+
+// OAuthConfig contains OAuth authentication configuration
+type OAuthConfig struct {
+	ClientID              string   `yaml:"client_id"`
+	ClientSecret          string   `yaml:"client_secret,omitempty"`
+	RedirectURI           string   `yaml:"redirect_uri,omitempty"`
+	Scopes                []string `yaml:"scopes,omitempty"`
+	AuthServerMetadataURL string   `yaml:"auth_server_metadata_url,omitempty"`
+	PKCEEnabled           bool     `yaml:"pkce_enabled,omitempty"`
 }
 
 // ProviderConfig contains configuration for a specific LLM provider
@@ -138,6 +182,10 @@ func LoadConfig() (*Config, error) {
 						Model: "gpt-4",
 					},
 				},
+			},
+			MCP: MCPConfig{
+				Enabled: false,
+				Servers: make(map[string]MCPServerConfig),
 			},
 			Kubernetes: KubernetesConfig{},
 			Settings: GeneralSettings{

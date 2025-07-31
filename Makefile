@@ -31,13 +31,17 @@ test: ## Run unit tests
 	@echo "Running tests..."
 	@go test -v -race ./... -short
 
-test-e2e: build ## Run end-to-end tests
+test-e2e-all: build ## Run end-to-end tests
 	@echo "Running E2E tests..."
 	@go test -v ./test/e2e/... -timeout 20m
 
 test-e2e-single: build ## Run a single E2E test (usage: make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis)
 	@echo "Running single E2E test: $(TEST)"
 	@go test -v ./test/e2e/... -run $(TEST) -preserve-on-failure
+
+test-e2e-multi: build ## Run multiple E2E tests in parallel (usage: make test-e2e-multi TESTS='TestCrashLoopBackoffDiagnosis|TestAnotherCase' PARALLEL=4)
+	@echo "Running multiple E2E tests: $(TESTS) with parallelism $(PARALLEL)"
+	@go test -v ./test/e2e/... -run "$(TESTS)" -parallel $(PARALLEL) -preserve-on-failure
 
 test-coverage: ## Run tests with coverage
 	@echo "Running tests with coverage..."

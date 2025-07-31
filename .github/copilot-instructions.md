@@ -54,12 +54,16 @@ Follow this exact project structure:
 │   │   ├── client.go                # LLM client interface definition
 │   │   ├── client_test.go           # Tests for LLM client interface
 │   │   ├── factory.go               # LLM client factory and provider selection
+│   │   ├── mcp_tools.go             # MCP-aware tool manager integration
 │   │   ├── tools.go                 # LLM tool calling and prompt utilities
 │   │   ├── tools_test.go            # Tests for LLM tools
 │   │   └── providers
 │   │       ├── anthropic.go         # Claude/Anthropic client implementation
 │   │       ├── openai.go            # OpenAI GPT client implementation
 │   │       └── unified.go           # Common provider utilities
+│   ├── mcp
+│   │   ├── manager.go               # MCP client interface, manager, and factory (using mcp-go)
+│   │   └── server.go                # MCP server implementation (using mcp-go)
 │   └── schemas
 │       └── credentials.go           # Credential file format definitions
 ├── docs
