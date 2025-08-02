@@ -101,21 +101,61 @@ Also supported:
 		}
 		fmt.Printf("🤖 Using LLM provider: %s\n", unifiedProvider.Name())
 
-		// Initialize tool manager for shell execution
-		toolManager := llm.NewToolManager(".")
+		// Initialize MCP-aware tool manager
+		toolManager, err := llm.NewMCPToolManager(".", cfg)
+		if err != nil {
+			return fmt.Errorf("failed to initialize tool manager: %w", err)
+		}
+
+		// Connect to MCP servers if enabled
+		if cfg.MCP.Enabled {
+			fmt.Println("🔌 Connecting to MCP servers...")
+			if err := toolManager.ConnectMCPServers(context.Background()); err != nil {
+				fmt.Printf("⚠️  Warning: Failed to connect to some MCP servers: %v\n", err)
+			} else {
+				mcpStatus := toolManager.GetMCPServerStatus()
+				connectedCount := 0
+				for serverName, connected := range mcpStatus {
+					if connected {
+						connectedCount++
+						fmt.Printf("✓ Connected to MCP server: %s\n", serverName)
+					} else {
+						fmt.Printf("✗ Failed to connect to MCP server: %s\n", serverName)
+					}
+				}
+				if connectedCount > 0 {
+					fmt.Printf("🔌 Connected to %d MCP server(s)\n", connectedCount)
+				}
+			}
+			// Ensure MCP servers are disconnected when done
+			defer func() {
+				if err := toolManager.DisconnectMCPServers(); err != nil {
+					fmt.Printf("Warning: Failed to disconnect MCP servers: %v\n", err)
+				}
+			}()
+		}
 
 		// Set confirmation mode
 		toolManager.SetConfirmationMode(confirm)
 
 		// Set Kubernetes configuration for the tool manager's shell executor
 		toolManager.SetKubernetesConfig(&cfg.Kubernetes)
-		tools := toolManager.GetTools()
+
+		// Get all available tools (shell + MCP)
+		tools, err := toolManager.GetAllTools(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to get available tools: %w", err)
+		}
+
+		fmt.Printf("🔧 Available tools: %d (including %d MCP tools)\n",
+			len(tools),
+			len(tools)-len(toolManager.GetTools()))
 
 		// Gather cluster context information before starting
 		fmt.Println("🔍 Gathering cluster information...")
 
 		// Build context info string using new function (prints as it gathers)
-		contextInfo, err := k8xcontext.BuildContextInfoString(toolManager, []string{"~/.zsh_history", "~/.bash_history"})
+		contextInfo, err := k8xcontext.BuildContextInfoString(toolManager.ToolManager, []string{"~/.zsh_history", "~/.bash_history"})
 		if err != nil {
 			return fmt.Errorf("failed to build context info: %w", err)
 		}
