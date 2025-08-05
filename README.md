@@ -21,6 +21,8 @@ different deployments/services/ingress/etc in your kubernetes cluster.
 - 🛡️ **Secure by Default**: Read-only mode with command filtering
 - 📚 **Command History**: Automatic tracking with undo support
 - 🎯 **Context-Aware**: Understands cluster state and provides relevant suggestions
+- 🔌 **MCP Integration**: Connect to external Model Context Protocol servers for extended capabilities
+- 🔧 **MCP Server**: Can expose k8x's capabilities as an MCP server for other applications
 
 ## Quick Start
 
@@ -61,7 +63,7 @@ k8x --version # v0.1.1
    k8x -c "are all pods running?"
    ```
 
-## Usage Examples
+#### Usage Examples
 
    ```bash
    # Diagnose pod issues
@@ -70,18 +72,22 @@ k8x --version # v0.1.1
    # Resource analysis
    k8x -c "Check resource usage across all namespaces"
 
-   # Service troubleshooting
-   k8x -c "Diagnose why my service endpoints are empty"
-
    # View command history
    k8x history list
    ```
 
-### Upgrades
+### Upgrade
 
    ```bash
    brew update          # fetches the latest tap and core metadata
    brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
+   ```
+
+## Experimental MCP (Model Context Protocol) integration
+
+   ```bash
+   k8x config mcp list                    # List configured MCP servers
+   k8x config mcp enable                  # Enable MCP integration
    ```
 
 ## Developer Documentation

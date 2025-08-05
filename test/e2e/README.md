@@ -15,14 +15,14 @@ The E2E tests are organized into:
 
 - `framework/`: Framework for cluster creation and test utilities
 - `framework/scenarios/`: Kubernetes resource manifests for problem scenarios
-- `*_e2e_test.go`: Test cases for different diagnoses
+- `*_test.go`: Test cases for different diagnoses
 
 ## Running the Tests
 
 You can run the E2E tests using:
 
 ```bash
-make test-e2e
+make test-e2e-all
 ```
 
 Or run them manually:
@@ -34,15 +34,20 @@ go test -v ./test/e2e/...
 To run a specific test:
 
 ```bash
-go test -v ./test/e2e/... -run TestCrashLoopBackoffDiagnosis
+make test-e2e-single TEST=TestCrashLoopBackoffDiagnosis
 ```
 
 ## Test Cases
 
-1. **CrashLoopBackOff**: Tests k8x's ability to diagnose a pod in CrashLoopBackOff state due to an exit code 1
-2. **ImagePullBackOff**: Tests diagnosing a pod that can't pull its container image
-3. **Missing ConfigMap**: Tests diagnosing a pod that depends on a non-existent ConfigMap
-4. **Kubectl Exit Code Validation**: Tests the framework's ability to handle kubectl command failures and validates that k8x can analyze various resource scenarios
+1. **CrashLoopBackOff**: Diagnoses a pod in CrashLoopBackOff state due to an exit code 1
+2. **ImagePullBackOff**: Diagnoses a pod that cannot pull its container image
+3. **Missing ConfigMap**: Diagnoses a pod that depends on a non-existent ConfigMap
+4. **Kubectl Exit Code Validation**: Validates that k8x properly analyzes resource scenarios and handles kubectl command failures
+
+## API Key Management
+
+Without a valid API key, tests will compile and run but may be skipped or fail during k8x execution.
+**Before running tests, please export your LLM API keys.**
 
 ## Adding New Test Cases
 
@@ -50,42 +55,58 @@ To add a new test scenario:
 
 1. Create a new scenario function in `framework/scenarios/pod_failures.go` or `framework/scenarios/opa_gatekeeper.go`
 2. Add a new test function in `run_e2e_test.go`
-3. Ensure the test creates a unique kind cluster name to avoid conflicts with existing tests
+3. Ensure each test uses a unique kind cluster name to avoid conflicts
 
 ## CI Integration
 
-The E2E tests are integrated with GitHub Actions in the `.github/workflows/e2e-tests.yml` workflow file. They run:
+The E2E tests are integrated with GitHub Actions as defined in `.github/workflows/test-e2e.yml`. They run:
 
 - On pushes to the `main` branch
 - On pull requests targeting the `main` branch
 - On manual workflow dispatch
 
-### API Key Management
-
-These tests require an OpenAI API key to work properly. The API key is stored securely as a GitHub Actions secret named `OPENAI_API_KEY`.
-
-For security reasons, secrets are not available to pull requests from forks. When a PR comes from a fork:
-
-1. The tests will still be compiled and executed
-2. They'll automatically detect they're running in a fork PR without access to API keys
-3. They'll mark themselves as skipped with an appropriate message
-4. After the PR is merged, the full E2E tests will run with proper API keys
-
-### Debugging Test Runs
+## Debugging Test Runs
 
 Test logs are automatically collected as GitHub Actions artifacts and are available for 7 days. This includes:
 
 - Temporary kubeconfig files
-- k8x configuration files
+- k8x configuration files (in ~/.k8x/)
 - kubectl output and errors
 
-### Testing Locally
+## MCP Integration Tests
 
-When running locally, you should set the `OPENAI_API_KEY` environment variable to your own API key:
+The MCP integration test (`mcp_integration_test.go`) validates that k8x can successfully communicate with external MCP servers, currently using the DuckDuckGo MCP server.
+
+### Prerequisites for MCP Integration Tests
+
+- Python 3.x installed
+- `pip` available
+- Internet access for dependency downloads
+
+### Running MCP Integration Tests
 
 ```bash
-export OPENAI_API_KEY=your-api-key-here
-make test-e2e
+# Run MCP integration tests
+make test-e2e-single TEST=TestDuckDuckGoMCPIntegration
 ```
 
-Without a valid API key, the tests will run but likely fail during the actual k8x execution phase.
+### What the MCP Integration Tests Validate
+
+1. **Client Creation**: Verifies MCP client creation using stdio transport
+2. **Tool Discovery**: Connects to the DuckDuckGo MCP server and lists available tools
+3. **Search Functionality**: Executes search queries and validates results
+4. **Error Handling**: Tests behavior with invalid tool calls and parameters
+
+The integration test process automatically:
+
+- Installs the `uv` Python package manager if missing
+- Downloads and installs the `duckduckgo-mcp-server` package
+- Launches the MCP server as a subprocess, performs operations, and cleans up afterwards
+
+## Skipping e2e Tests
+
+Integration tests are automatically skipped if:
+
+- Running in `-short` mode
+- Python dependencies are not available
+- Network connectivity issues prevent server installation
