@@ -6,9 +6,9 @@ k8x is an intelligent CLI tool that acts as an AI-powered layer on top of `kubec
 [![Go Report Card](https://goreportcard.com/badge/github.com/shankarg87/k8x)](https://goreportcard.com/report/github.com/shankarg87/k8x)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Release v0.1.1
+## Release v0.2.0
 
-`v0.1.1` is the first release for `k8x`. It performs read only operations on your kubernetes cluster
+`v0.2.0` is the first release for `k8x`. It performs read only operations on your kubernetes cluster
 using `kubectl`, and is super effective at running multi-step checks and diagnostics over
 different deployments/services/ingress/etc in your kubernetes cluster.
 
@@ -33,7 +33,7 @@ different deployments/services/ingress/etc in your kubernetes cluster.
 brew tap aihero/k8x
 brew install k8x
 
-k8x --version # v0.1.1
+k8x --version # v0.2.0
 ```
 
 ### Setup
