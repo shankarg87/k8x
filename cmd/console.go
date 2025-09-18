@@ -427,7 +427,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 			// Save planning step to history
 			if historyManager != nil {
 				step := history.Step{
-					Description: fmt.Sprintf("Planning Step %d", stepCount),
+					Description: fmt.Sprintf("Planning Step %d", *stepCount),
 					Output:      response.Content,
 					Type:        "step",
 				}
