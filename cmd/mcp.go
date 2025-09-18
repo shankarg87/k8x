@@ -117,7 +117,8 @@ var mcpRemoveCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(mcpCmd)
+	// Command is now accessible via /mcp in console
+	// rootCmd.AddCommand(mcpCmd)
 	mcpCmd.AddCommand(mcpListCmd)
 	mcpCmd.AddCommand(mcpEnableCmd)
 	mcpCmd.AddCommand(mcpDisableCmd)

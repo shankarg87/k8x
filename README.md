@@ -14,12 +14,13 @@ different deployments/services/ingress/etc in your kubernetes cluster.
 
 ## Features
 
+- 💬 **Interactive Console**: REPL-style interface with slash commands for continuous interaction
 - 🤖 **Natural Language Interface**: Ask questions about your cluster in plain English
 - 🔄 **Autonomous Multi-step Execution**: AI agent executes safe kubectl commands automatically
-- 🔌 **Multi-LLM Support**: OpenAI, Anthropic Claude, and other providers
+- 🔌 **Multi-LLM Support**: OpenAI, Anthropic Claude, and Google Gemini providers
 - 🔍 **Intelligent Diagnostics**: AI-powered troubleshooting and resource analysis
 - 🛡️ **Secure by Default**: Read-only mode with command filtering
-- 📚 **Command History**: Automatic tracking with undo support
+- 📚 **Command History**: Automatic tracking with `.k8x` session files
 - 🎯 **Context-Aware**: Understands cluster state and provides relevant suggestions
 - 🔌 **MCP Integration**: Connect to external Model Context Protocol servers for extended capabilities
 - 🔧 **MCP Server**: Can expose k8x's capabilities as an MCP server for other applications
@@ -36,17 +37,74 @@ brew install k8x
 k8x --version # v0.2.0
 ```
 
+### Getting Started
+
+```bash
+# 1. Launch k8x (will auto-configure on first run)
+k8x
+
+# 2. Follow the setup prompts to choose your LLM provider
+# 3. Start asking questions about your cluster!
+```
+
+### Interactive Console
+
+k8x features an interactive console similar to Claude Code. Simply run:
+
+```bash
+k8x
+```
+
+This will launch the interactive console where you can:
+
+- Type natural language questions about your Kubernetes cluster
+- Use slash commands for special operations
+- Get immediate feedback and results
+
+#### Console Commands
+
+```text
+/help, /h       - Show available commands
+/configure, /f  - Configure k8x settings
+/history, /x    - Show command history
+/version, /v    - Show version information
+/confirm        - Toggle confirmation mode
+/mcp            - Show MCP server status
+/clear, /cls    - Clear the screen
+/exit, /q       - Exit the console
+```
+
+Example console session:
+
+```text
+╔════════════════════════════════════════════╗
+║         Welcome to k8x Console! 🚀         ║
+╚════════════════════════════════════════════╝
+🤖 Using LLM provider: Anthropic
+
+Type your Kubernetes questions in natural language.
+Type /help for available commands or /exit to quit.
+
+> Why is my nginx pod failing?
+
+📋 Step 1:
+💭 I'll help you diagnose why your nginx pod is failing...
+```
+
 ### Setup
 
-1. **Initialize configuration:**
+The first time you run k8x, it will automatically prompt you to configure your LLM provider:
+
+1. **Run k8x:**
 
    ```bash
-   k8x configure
+   k8x
    ```
 
-1. **When prompted, choose your LLM provider and add your LLM API key**
+2. **Follow the configuration prompts:**
 
    ```text
+   🔧 k8x is not configured. Let's set it up now.
    Select your preferred LLM provider:
    1. OpenAI
    2. Anthropic
@@ -57,38 +115,63 @@ k8x --version # v0.2.0
 
    > NOTE: The configuration and key is saved in `~/.k8x/credentials`.
 
-1. **Start using k8x:**
-
-   ```bash
-   k8x -c "are all pods running?"
-   ```
-
 #### Usage Examples
 
-   ```bash
-   # Diagnose pod issues
-   k8x -c "Find all pods that are not ready and explain why"
+In the k8x console, you can type natural language commands:
 
-   # Resource analysis
-   k8x -c "Check resource usage across all namespaces"
+```text
+> Find all pods that are not ready and explain why
 
-   # View command history
-   k8x history list
-   ```
+> Check resource usage across all namespaces
+
+> Why is my ingress not working?
+
+> Show me all services in the default namespace
+```
+
+Or use slash commands:
+
+```text
+> /history
+
+> /configure
+
+> /version
+```
+
+### One-Shot Command Mode
+
+You can also run k8x in non-interactive mode for single commands:
+
+```bash
+# Execute a single command
+k8x -c "are all pods running?"
+
+# With confirmation mode
+k8x -c -a "diagnose my failing deployment"
+```
 
 ### Upgrade
 
-   ```bash
-   brew update          # fetches the latest tap and core metadata
-   brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
-   ```
+```bash
+brew update          # fetches the latest tap and core metadata
+brew upgrade k8x     # upgrades only k8x (leaving other formulae untouched)
+```
 
-## Experimental MCP (Model Context Protocol) integration
+## Experimental MCP (Model Context Protocol) Integration
 
-   ```bash
-   k8x config mcp list                    # List configured MCP servers
-   k8x config mcp enable                  # Enable MCP integration
-   ```
+k8x supports the Model Context Protocol for extending capabilities:
+
+```bash
+# Configure MCP servers
+k8x config mcp list                    # List configured MCP servers
+k8x config mcp enable                  # Enable MCP integration
+k8x config mcp add <server-name>       # Add a new MCP server
+
+# Check MCP status in console
+k8x
+> /mcp                                 # Show MCP server connection status
+```
 
 ## Developer Documentation
 

@@ -18,5 +18,6 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(versionCmd)
+	// Command is now accessible via /version in console
+	// rootCmd.AddCommand(versionCmd)
 }

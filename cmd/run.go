@@ -360,7 +360,8 @@ The last line should be a single sentence saying what was done. Followed by **DO
 }
 
 func init() {
-	rootCmd.AddCommand(runCmd)
+	// Command functionality is now integrated into console
+	// rootCmd.AddCommand(runCmd)
 
 	// Add confirm flag with alias a
 	runCmd.Flags().BoolP("confirm", "a", false, "Ask for confirmation before executing each tool")
