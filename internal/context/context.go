@@ -129,17 +129,17 @@ func BuildContextInfo(
 				// but collect them in reverse to show most recent first
 				var allCommands []string
 				allCmdSet := make(map[string]struct{})
-				
+
 				i := 0
 				for i < len(lines) {
 					line := lines[i]
-					
+
 					// Skip empty lines
 					if line == "" {
 						i++
 						continue
 					}
-					
+
 					// Handle zsh timestamp format: ": timestamp:duration;command"
 					if strings.HasPrefix(line, ":") {
 						semicolonIndex := strings.Index(line, ";")
@@ -150,17 +150,17 @@ func BuildContextInfo(
 							continue
 						}
 					}
-					
+
 					// Check if this line starts a command we're interested in
 					if strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "kustomize") {
 						// Reconstruct the complete command, handling multi-line continuations
 						fullCommand := line
 						j := i + 1
-						
+
 						// Look forward for continuation lines (current line ends with \)
 						for strings.HasSuffix(fullCommand, "\\") && j < len(lines) {
 							nextLine := lines[j]
-							
+
 							// Handle zsh timestamp format in continuation lines
 							if strings.HasPrefix(nextLine, ":") {
 								semicolonIndex := strings.Index(nextLine, ";")
@@ -171,25 +171,25 @@ func BuildContextInfo(
 									break
 								}
 							}
-							
+
 							// Add the continuation line
 							fullCommand += "\n" + nextLine
 							j++
 						}
-						
+
 						// Add the complete command if we haven't seen it before
 						if _, exists := allCmdSet[fullCommand]; !exists {
 							allCmdSet[fullCommand] = struct{}{}
 							allCommands = append(allCommands, fullCommand)
 						}
-						
+
 						// Skip the lines we've already processed as part of this command
 						i = j
 					} else {
 						i++
 					}
 				}
-				
+
 				// Reverse the commands to show most recent first, and limit to 20
 				for i := len(allCommands) - 1; i >= 0 && len(cmds) < 20; i-- {
 					cmds = append(cmds, allCommands[i])

@@ -35,17 +35,17 @@ func parseShellHistory(historyPath string) ([]string, error) {
 	// Updated logic that handles multi-line commands
 	var allCommands []string
 	allCmdSet := make(map[string]struct{})
-	
+
 	i := 0
 	for i < len(lines) {
 		line := lines[i]
-		
+
 		// Skip empty lines
 		if line == "" {
 			i++
 			continue
 		}
-		
+
 		// Handle zsh timestamp format: ": timestamp:duration;command"
 		if strings.HasPrefix(line, ":") {
 			semicolonIndex := strings.Index(line, ";")
@@ -56,17 +56,17 @@ func parseShellHistory(historyPath string) ([]string, error) {
 				continue
 			}
 		}
-		
+
 		// Check if this line starts a command we're interested in
 		if strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "kustomize") {
 			// Reconstruct the complete command, handling multi-line continuations
 			fullCommand := line
 			j := i + 1
-			
+
 			// Look forward for continuation lines (current line ends with \)
 			for strings.HasSuffix(fullCommand, "\\") && j < len(lines) {
 				nextLine := lines[j]
-				
+
 				// Handle zsh timestamp format in continuation lines
 				if strings.HasPrefix(nextLine, ":") {
 					semicolonIndex := strings.Index(nextLine, ";")
@@ -77,25 +77,25 @@ func parseShellHistory(historyPath string) ([]string, error) {
 						break
 					}
 				}
-				
+
 				// Add the continuation line
 				fullCommand += "\n" + nextLine
 				j++
 			}
-			
+
 			// Add the complete command if we haven't seen it before
 			if _, exists := allCmdSet[fullCommand]; !exists {
 				allCmdSet[fullCommand] = struct{}{}
 				allCommands = append(allCommands, fullCommand)
 			}
-			
+
 			// Skip the lines we've already processed as part of this command
 			i = j
 		} else {
 			i++
 		}
 	}
-	
+
 	// Reverse the commands to show most recent first, and limit to 20
 	for i := len(allCommands) - 1; i >= 0 && len(cmds) < 20; i-- {
 		cmds = append(cmds, allCommands[i])
@@ -145,11 +145,11 @@ kubectl delete pod \
 
 	// Verify that multi-line commands are now captured completely
 	expectedCommands := map[string]bool{
-		"kubectl get pods \\\n  --namespace=default \\\n  --output=wide": false,
-		"kubectl describe pod my-pod \\\n  --namespace=production": false,
+		"kubectl get pods \\\n  --namespace=default \\\n  --output=wide":                            false,
+		"kubectl describe pod my-pod \\\n  --namespace=production":                                  false,
 		"helm install my-release \\\n  --namespace=production \\\n  --set key=value \\\n  my-chart": false,
-		"kubectl delete pod \\\n  old-pod \\\n  --grace-period=0": false,
-		"kubectl apply -f deployment.yaml": false,
+		"kubectl delete pod \\\n  old-pod \\\n  --grace-period=0":                                   false,
+		"kubectl apply -f deployment.yaml":                                                          false,
 	}
 
 	for _, cmd := range cmds {
@@ -215,6 +215,67 @@ my-pod \
 	for expectedCmd, found := range expectedCommands {
 		if !found {
 			t.Errorf("Expected zsh command not found: %q", expectedCmd)
+		}
+	}
+}
+
+// Test edge cases for shell history parsing
+func TestShellHistoryEdgeCases(t *testing.T) {
+	tmpDir := t.TempDir()
+	historyFile := filepath.Join(tmpDir, "edge_cases_history")
+
+	// Test various edge cases
+	historyContent := `: 1234567890:0;
+: 1234567891:0;kubectl get pods
+kubectl apply -f \
+file1.yaml \
+file2.yaml \
+file3.yaml
+: 1234567892:0;some-other-command
+helm upgrade release-name \
+  chart-name \
+  --set value1=test \
+  --set value2=test
+: 1234567893:0;
+kubectl delete pod \
+  some-pod
+kustomize build .
+`
+
+	err := os.WriteFile(historyFile, []byte(historyContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create edge cases history file: %v", err)
+	}
+
+	cmds, err := parseShellHistory(historyFile)
+	if err != nil {
+		t.Fatalf("parseShellHistory failed: %v", err)
+	}
+
+	for _, cmd := range cmds {
+		t.Logf("Captured command: %q", cmd)
+	}
+
+	// Verify expected commands
+	expectedCommands := []string{
+		"kustomize build .",
+		"kubectl delete pod \\\n  some-pod",
+		"helm upgrade release-name \\\n  chart-name \\\n  --set value1=test \\\n  --set value2=test",
+		"kubectl apply -f \\\nfile1.yaml \\\nfile2.yaml \\\nfile3.yaml",
+		"kubectl get pods",
+	}
+
+	if len(cmds) != len(expectedCommands) {
+		t.Errorf("Expected %d commands, got %d", len(expectedCommands), len(cmds))
+	}
+
+	for i, expectedCmd := range expectedCommands {
+		if i >= len(cmds) {
+			t.Errorf("Missing expected command: %q", expectedCmd)
+			continue
+		}
+		if cmds[i] != expectedCmd {
+			t.Errorf("Command %d mismatch:\nExpected: %q\nGot: %q", i, expectedCmd, cmds[i])
 		}
 	}
 }
