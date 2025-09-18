@@ -222,7 +222,7 @@ func testSearchFunctionality(t *testing.T, serverConfig config.MCPServerConfig) 
 		t.Fatal("Search result should not be nil")
 	}
 
-	if result.IsError {
+	if result != nil && result.IsError {
 		t.Fatalf("Search returned error: %+v", result)
 	}
 

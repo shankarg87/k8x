@@ -102,7 +102,8 @@ var historyClearCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(historyCmd)
+	// Commands are now accessible via /history in console
+	// rootCmd.AddCommand(historyCmd)
 	historyCmd.AddCommand(historyListCmd)
 	historyCmd.AddCommand(historyShowCmd)
 	historyCmd.AddCommand(historyClearCmd)

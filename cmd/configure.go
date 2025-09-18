@@ -35,10 +35,26 @@ This command will:
 			return err
 		}
 
-		// Create example config file if it doesn't exist
+		// Create config file if it doesn't exist
 		configPath := filepath.Join(configDir, "config.yaml")
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			if err := copyExampleFile("examples/config.yaml", configPath); err != nil {
+			// Create default config file
+			defaultConfig := `# K8X Configuration
+
+# Kubernetes settings
+kubernetes:
+  # Namespace to use if not specified in commands
+  default_namespace: "default"
+
+  # Context to use (leave empty to use current context)
+  context: ""
+
+# MCP (Model Context Protocol) settings
+mcp:
+  enabled: false
+  servers: []
+`
+			if err := os.WriteFile(configPath, []byte(defaultConfig), 0644); err != nil {
 				return fmt.Errorf("failed to create config file: %w", err)
 			}
 			fmt.Printf("✓ Created configuration file: %s\n", configPath)
@@ -46,10 +62,27 @@ This command will:
 			fmt.Printf("✓ Configuration file exists: %s\n", configPath)
 		}
 
-		// Create example credentials file if it doesn't exist
+		// Create credentials file if it doesn't exist
 		credentialsPath := filepath.Join(configDir, "credentials")
 		if _, err := os.Stat(credentialsPath); os.IsNotExist(err) {
-			if err := copyExampleFile("examples/credentials", credentialsPath); err != nil {
+			// Create empty credentials file with default structure
+			defaultCreds := `# K8X Credentials Configuration
+# This file stores your LLM provider API keys
+# It will be populated when you configure k8x
+
+selected_provider: ""
+
+openai:
+  api_key: ""
+
+anthropic:
+  api_key: ""
+
+google:
+  api_key: ""
+  application_credentials: ""
+`
+			if err := os.WriteFile(credentialsPath, []byte(defaultCreds), 0600); err != nil {
 				return fmt.Errorf("failed to create credentials file: %w", err)
 			}
 			fmt.Printf("✓ Created credentials template: %s\n", credentialsPath)
@@ -118,30 +151,14 @@ This command will:
 		fmt.Printf("✓ Updated credentials for %s\n", provider)
 
 		fmt.Println("\n🚀 k8x workspace initialized successfully!")
-		fmt.Println("\nNext steps:")
-		fmt.Println("Run 'k8x run \"<your kubernetes goal>\"' to start using k8x")
-
-		fmt.Println("\nExample:")
-		fmt.Println("  k8x run \"List all pods in the default namespace\"")
+		fmt.Println("\n✅ Configuration complete! You can now use k8x.")
+		fmt.Println("\nNext step: Simply run 'k8x' to start the interactive console")
 
 		return nil
 	},
 }
 
-// copyExampleFile copies a file from the examples directory to the destination
-func copyExampleFile(srcPath, destPath string) error {
-	data, err := os.ReadFile(srcPath)
-	if err != nil {
-		return fmt.Errorf("failed to read example file %s: %w", srcPath, err)
-	}
-
-	if err := os.WriteFile(destPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", destPath, err)
-	}
-
-	return nil
-}
-
 func init() {
-	rootCmd.AddCommand(configureCmd)
+	// Command is now accessible via /configure in console
+	// rootCmd.AddCommand(configureCmd)
 }
