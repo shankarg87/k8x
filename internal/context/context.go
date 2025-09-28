@@ -111,7 +111,6 @@ func BuildContextInfo(
 		}
 	}
 	cmds := []string{}
-	cmdSet := make(map[string]struct{})
 	if historyPath != "" {
 		file, err := os.Open(historyPath)
 		if err == nil {
@@ -126,17 +125,74 @@ func BuildContextInfo(
 				lines = append(lines, scanner.Text())
 			}
 			if err := scanner.Err(); err == nil {
-				for i := len(lines) - 1; i >= 0 && len(cmds) < 50; i-- {
+				// Process commands from oldest to newest to maintain history order
+				// but collect them in reverse to show most recent first
+				var allCommands []string
+				allCmdSet := make(map[string]struct{})
+
+				i := 0
+				for i < len(lines) {
 					line := lines[i]
-					if line == "" || strings.HasPrefix(line, ":") {
+
+					// Skip empty lines
+					if line == "" {
+						i++
 						continue
 					}
-					if strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "kustomize") {
-						if _, exists := cmdSet[line]; !exists {
-							cmdSet[line] = struct{}{}
-							cmds = append(cmds, line)
+
+					// Handle zsh timestamp format: ": timestamp:duration;command"
+					if strings.HasPrefix(line, ":") {
+						semicolonIndex := strings.Index(line, ";")
+						if semicolonIndex != -1 && semicolonIndex < len(line)-1 {
+							line = line[semicolonIndex+1:]
+						} else {
+							i++
+							continue
 						}
 					}
+
+					// Check if this line starts a command we're interested in
+					if strings.HasPrefix(line, "kubectl") || strings.HasPrefix(line, "helm") || strings.HasPrefix(line, "kustomize") {
+						// Reconstruct the complete command, handling multi-line continuations
+						fullCommand := line
+						j := i + 1
+
+						// Look forward for continuation lines (current line ends with \)
+						for strings.HasSuffix(fullCommand, "\\") && j < len(lines) {
+							nextLine := lines[j]
+
+							// Handle zsh timestamp format in continuation lines
+							if strings.HasPrefix(nextLine, ":") {
+								semicolonIndex := strings.Index(nextLine, ";")
+								if semicolonIndex != -1 && semicolonIndex < len(nextLine)-1 {
+									nextLine = nextLine[semicolonIndex+1:]
+								} else {
+									// If it's just a timestamp line without command, stop
+									break
+								}
+							}
+
+							// Add the continuation line
+							fullCommand += "\n" + nextLine
+							j++
+						}
+
+						// Add the complete command if we haven't seen it before
+						if _, exists := allCmdSet[fullCommand]; !exists {
+							allCmdSet[fullCommand] = struct{}{}
+							allCommands = append(allCommands, fullCommand)
+						}
+
+						// Skip the lines we've already processed as part of this command
+						i = j
+					} else {
+						i++
+					}
+				}
+
+				// Reverse the commands to show most recent first, and limit to 20
+				for i := len(allCommands) - 1; i >= 0 && len(cmds) < 20; i-- {
+					cmds = append(cmds, allCommands[i])
 				}
 				if len(cmds) > 20 {
 					cmds = cmds[:20]
