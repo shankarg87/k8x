@@ -14,6 +14,7 @@ import (
 	"k8x/internal/history"
 	"k8x/internal/llm"
 	"k8x/internal/llm/providers"
+	"k8x/internal/output"
 
 	"github.com/spf13/cobra"
 )
@@ -35,9 +36,12 @@ Special commands:
 }
 
 func runConsole(cmd *cobra.Command, args []string) error {
+	// Initialize colored printer with secret filtering enabled
+	printer := output.NewPrinter(true)
+
 	// Check if configuration exists
 	if !isConfigured() {
-		fmt.Println("🔧 k8x is not configured. Let's set it up now.")
+		printer.PrintInfoln("🔧 k8x is not configured. Let's set it up now.")
 		if err := configureCmd.RunE(configureCmd, []string{}); err != nil {
 			return fmt.Errorf("configuration failed: %w", err)
 		}
@@ -56,7 +60,7 @@ func runConsole(cmd *cobra.Command, args []string) error {
 	}
 
 	if !creds.HasAnyKey("openai_api_key", "anthropic_api_key", "gemini_api_key") {
-		fmt.Println("🔧 No LLM provider configured. Let's set it up now.")
+		printer.PrintInfoln("🔧 No LLM provider configured. Let's set it up now.")
 		if err := configureCmd.RunE(configureCmd, []string{}); err != nil {
 			return fmt.Errorf("configuration failed: %w", err)
 		}
@@ -90,13 +94,13 @@ func runConsole(cmd *cobra.Command, args []string) error {
 
 	// Connect to MCP servers if enabled
 	if cfg.MCP.Enabled {
-		fmt.Println("🔌 Connecting to MCP servers...")
+		printer.PrintInfoln("🔌 Connecting to MCP servers...")
 		if err := toolManager.ConnectMCPServers(context.Background()); err != nil {
-			fmt.Printf("⚠️  Warning: Failed to connect to some MCP servers: %v\n", err)
+			printer.PrintWarningln("⚠️  Warning: Failed to connect to some MCP servers: %v", err)
 		}
 		defer func() {
 			if err := toolManager.DisconnectMCPServers(); err != nil {
-				fmt.Printf("Warning: Failed to disconnect MCP servers: %v\n", err)
+				printer.PrintWarningln("Warning: Failed to disconnect MCP servers: %v", err)
 			}
 		}()
 	}
@@ -105,30 +109,33 @@ func runConsole(cmd *cobra.Command, args []string) error {
 	toolManager.SetKubernetesConfig(&cfg.Kubernetes)
 
 	// Print welcome message
-	printWelcome(unifiedProvider.Name())
+	printWelcome(unifiedProvider.Name(), printer)
 
 	// Start console loop
 	return runConsoleLoop(unifiedProvider, toolManager, cfg)
 }
 
-func printWelcome(providerName string) {
-	fmt.Println("\n╔════════════════════════════════════════════╗")
-	fmt.Println("║         Welcome to k8x Console! 🚀         ║")
-	fmt.Println("╚════════════════════════════════════════════╝")
-	fmt.Printf("🤖 Using LLM provider: %s\n", providerName)
-	fmt.Println("\nType your Kubernetes questions in natural language.")
-	fmt.Println("Type /help for available commands or /exit to quit.")
+func printWelcome(providerName string, printer *output.Printer) {
+	printer.PrintInfoln("\n╔════════════════════════════════════════════╗")
+	printer.PrintInfoln("║         Welcome to k8x Console! 🚀         ║")
+	printer.PrintInfoln("╚════════════════════════════════════════════╝")
+	printer.PrintInfoln("🤖 Using LLM provider: %s", providerName)
+	printer.Println("\nType your Kubernetes questions in natural language.")
+	printer.Println("Type /help for available commands or /exit to quit.")
 }
 
 func runConsoleLoop(provider *providers.UnifiedProvider, toolManager *llm.MCPToolManager, cfg *config.Config) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	historyManager, _ := history.NewManager()
 
+	// Initialize colored printer with secret filtering enabled
+	printer := output.NewPrinter(true)
+
 	// Gather initial cluster context
-	fmt.Println("🔍 Gathering cluster information...")
+	printer.PrintInfoln("🔍 Gathering cluster information...")
 	contextInfo, err := k8xcontext.BuildContextInfoString(toolManager.ToolManager, []string{"~/.zsh_history", "~/.bash_history"})
 	if err != nil {
-		fmt.Printf("⚠️  Warning: Failed to gather cluster context: %v\n", err)
+		printer.PrintWarningln("⚠️  Warning: Failed to gather cluster context: %v", err)
 		contextInfo = "Cluster context information unavailable."
 	}
 
@@ -141,7 +148,8 @@ func runConsoleLoop(provider *providers.UnifiedProvider, toolManager *llm.MCPToo
 	stepCount := 0
 
 	for {
-		fmt.Print("\n> ")
+		fmt.Println()
+		printer.PrintPrompt()
 
 		if !scanner.Scan() {
 			break
@@ -157,7 +165,7 @@ func runConsoleLoop(provider *providers.UnifiedProvider, toolManager *llm.MCPToo
 		if strings.HasPrefix(input, "/") {
 			handled, shouldExit, shouldClear := handleSlashCommand(input, provider, toolManager, cfg, &messages, &stepCount, contextInfo)
 			if shouldExit {
-				fmt.Println("👋 Goodbye!")
+				printer.PrintInfoln("👋 Goodbye!")
 				return nil
 			}
 			if shouldClear {
@@ -166,20 +174,20 @@ func runConsoleLoop(provider *providers.UnifiedProvider, toolManager *llm.MCPToo
 					{Role: "system", Content: systemPrompt},
 				}
 				stepCount = 0
-				fmt.Println("🔄 Conversation history cleared. Starting fresh!")
+				printer.PrintSuccessln("🔄 Conversation history cleared. Starting fresh!")
 			}
 			if handled && !shouldClear {
 				continue
 			}
 			if !handled {
-				fmt.Printf("❌ Unknown command: %s (type /help for available commands)\n", input)
+				printer.PrintErrorln("❌ Unknown command: %s (type /help for available commands)", input)
 			}
 			continue
 		}
 
 		// Handle natural language command
-		if err := executeGoalWithHistory(input, provider, toolManager, historyManager, &messages, &stepCount, false); err != nil {
-			fmt.Printf("❌ Error: %v\n", err)
+		if err := executeGoalWithHistory(input, provider, toolManager, historyManager, &messages, &stepCount, false, printer); err != nil {
+			printer.PrintErrorln("❌ Error: %v", err)
 		}
 	}
 
@@ -187,7 +195,7 @@ func runConsoleLoop(provider *providers.UnifiedProvider, toolManager *llm.MCPToo
 		return fmt.Errorf("scanner error: %w", err)
 	}
 
-	fmt.Println("\n👋 Goodbye!")
+	printer.PrintInfoln("\n👋 Goodbye!")
 	return nil
 }
 
@@ -318,7 +326,7 @@ Guidelines:
 - If you achieve the goal or cannot proceed further, say "**DONE**."`, contextInfo)
 }
 
-func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, toolManager *llm.MCPToolManager, historyManager *history.Manager, messages *[]llm.Message, stepCount *int, confirm bool) error {
+func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, toolManager *llm.MCPToolManager, historyManager *history.Manager, messages *[]llm.Message, stepCount *int, confirm bool, printer *output.Printer) error {
 	// Create history entry
 	entry := &history.Entry{
 		Goal:      goal,
@@ -330,7 +338,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 	// Save the session
 	if historyManager != nil {
 		if err := historyManager.Save(entry); err != nil {
-			fmt.Printf("⚠️  Warning: Failed to save history: %v\n", err)
+			printer.PrintWarningln("⚠️  Warning: Failed to save history: %v", err)
 		}
 	}
 
@@ -358,7 +366,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 	for stepsForThisGoal < maxStepsPerGoal {
 		*stepCount++
 		stepsForThisGoal++
-		fmt.Printf("\n📋 Step %d:\n", *stepCount)
+		printer.PrintInfoln("\n📋 Step %d:", *stepCount)
 
 		// Get response from LLM
 		response, err := provider.ChatWithTools(context.Background(), *messages, tools)
@@ -366,7 +374,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 			return fmt.Errorf("failed to get LLM response: %w", err)
 		}
 
-		fmt.Printf("💭 %s\n", response.Content)
+		printer.PrintAssistantln("💭 %s", response.Content)
 
 		// Add to messages
 		assistantMsg := llm.Message{
@@ -380,13 +388,13 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 			*messages = append(*messages, assistantMsg)
 
 			for _, toolCall := range response.ToolCalls {
-				fmt.Printf("\n🔧 Executing: %s\n", toolCall.Function.Name)
+				printer.PrintInfoln("\n🔧 Executing: %s", toolCall.Function.Name)
 
 				// Parse and display arguments
 				var argsMap map[string]interface{}
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &argsMap); err == nil {
 					if cmd, ok := argsMap["command"]; ok {
-						fmt.Printf("📝 Command: %v\n", cmd)
+						printer.PrintCommandln("📝 Command: %v", cmd)
 					}
 				}
 
@@ -394,12 +402,14 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 				result, err := toolManager.ExecuteTool(toolCall.Function.Name, toolCall.Function.Arguments)
 				if err != nil {
 					result = fmt.Sprintf("Error: %v", err)
-					fmt.Printf("❌ Failed: %v\n", err)
+					printer.PrintErrorln("❌ Failed: %v", err)
 				} else {
-					fmt.Println("✅ Success")
+					printer.PrintSuccessln("✅ Success")
 				}
 
-				fmt.Printf("📄 Output:\n%s\n", result)
+				// Filter secrets from output before printing
+				filteredResult := output.FilterSecrets(result)
+				printer.Println("📄 Output:\n%s", filteredResult)
 
 				// Add result to conversation
 				*messages = append(*messages, llm.Message{
@@ -417,7 +427,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 						Type:        "command",
 					}
 					if err := historyManager.AddStep(entry, step); err != nil {
-						fmt.Fprintf(os.Stderr, "Warning: failed to add step to history: %v\n", err)
+						printer.PrintWarningln("Warning: failed to add step to history: %v", err)
 					}
 				}
 			}
@@ -432,7 +442,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 					Type:        "step",
 				}
 				if err := historyManager.AddStep(entry, step); err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: failed to add step to history: %v\n", err)
+					printer.PrintWarningln("Warning: failed to add step to history: %v", err)
 				}
 			}
 		}
@@ -442,7 +452,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 			if historyManager != nil {
 				entry.Status = "completed"
 				if err := historyManager.UpdateEntry(entry); err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: failed to update history entry: %v\n", err)
+					printer.PrintWarningln("Warning: failed to update history entry: %v", err)
 				}
 			}
 			return nil
@@ -450,7 +460,7 @@ func executeGoalWithHistory(goal string, provider *providers.UnifiedProvider, to
 	}
 
 	if stepsForThisGoal >= maxStepsPerGoal {
-		fmt.Printf("⚠️  Reached maximum steps (%d) for this goal. You can continue with another request.\n", maxStepsPerGoal)
+		printer.PrintWarningln("⚠️  Reached maximum steps (%d) for this goal. You can continue with another request.", maxStepsPerGoal)
 	}
 
 	return nil

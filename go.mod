@@ -6,6 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.4.0
+	github.com/fatih/color v1.18.0
 	github.com/mark3labs/mcp-go v0.36.0
 	github.com/openai/openai-go v1.8.2
 	github.com/spf13/cobra v1.8.0
@@ -33,6 +34,8 @@ require (
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
